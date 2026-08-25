@@ -50,17 +50,49 @@ function referenceValues(gaDecimal, cgaDecimal, dol) {
   return values ? { ...values, model: isDayOne ? "day-one" : "corrected-age" } : null;
 }
 
+function classifyPressure(value, fifthCentile) {
+  return value < fifthCentile ? "low" : "acceptable";
+}
+
 function renderPressureValues(elementId, values) {
   const list = document.querySelector(elementId);
   list.replaceChildren();
   values.forEach((value, index) => {
     const wrapper = document.createElement("div");
+    wrapper.className = `centile-row centile-${index}`;
     const term = document.createElement("dt");
     const description = document.createElement("dd");
     term.textContent = CENTILE_LABELS[index];
     description.innerHTML = `<strong>${value}</strong> <span>mmHg</span>`;
     wrapper.append(term, description);
     list.append(wrapper);
+  });
+}
+
+function renderPatientComparison(centiles, patientValues) {
+  const comparison = document.querySelector("#patient-comparison");
+  const grid = document.querySelector("#comparison-grid");
+  const pressures = [
+    { label: "Systolic", short: "SBP", value: patientValues.sbp, fifth: centiles.sbp[0] },
+    { label: "Diastolic", short: "DBP", value: patientValues.dbp, fifth: centiles.dbp[0] },
+    { label: "Mean arterial", short: "MAP", value: patientValues.map, fifth: centiles.map[0] }
+  ].filter(item => item.value !== null);
+
+  comparison.hidden = pressures.length === 0;
+  grid.replaceChildren();
+  pressures.forEach(item => {
+    const status = classifyPressure(item.value, item.fifth);
+    const card = document.createElement("article");
+    card.className = `comparison-card ${status}`;
+    card.innerHTML = `
+      <div class="status-icon" aria-hidden="true">${status === "low" ? "!" : "✓"}</div>
+      <div>
+        <p class="comparison-name">${item.label} (${item.short})</p>
+        <p class="comparison-value"><strong>${item.value}</strong> mmHg</p>
+        <p class="comparison-status">${status === "low" ? "Low" : "Acceptable"}</p>
+        <p class="comparison-threshold">5th centile: ${item.fifth} mmHg</p>
+      </div>`;
+    grid.append(card);
   });
 }
 
@@ -80,10 +112,22 @@ form.addEventListener("submit", event => {
   const gaWeeks = Number(document.querySelector("#ga-weeks").value);
   const gaDays = Number(document.querySelector("#ga-days").value);
   const dol = Number(document.querySelector("#dol").value);
+  const readOptionalPressure = id => {
+    const raw = document.querySelector(id).value.trim();
+    return raw === "" ? null : Number(raw);
+  };
+  const patientValues = {
+    sbp: readOptionalPressure("#patient-sbp"),
+    dbp: readOptionalPressure("#patient-dbp"),
+    map: readOptionalPressure("#patient-map")
+  };
 
   if (!validateInteger(gaWeeks, 22, 42)) return showError("Enter birth gestation from 22 to 42 completed weeks.");
   if (!validateInteger(gaDays, 0, 6)) return showError("Enter 0 to 6 additional gestational days.");
   if (!validateInteger(dol, 0, 154)) return showError("Enter an integer day of life from 0 to 154.");
+  if (Object.values(patientValues).some(value => value !== null && (!Number.isFinite(value) || value < 1 || value > 200))) {
+    return showError("Enter blood pressure values from 1 to 200 mmHg, or leave the fields blank.");
+  }
 
   const cga = calculateCga(gaWeeks, gaDays, dol);
   const gaDecimal = gaWeeks + gaDays / 7;
@@ -105,6 +149,7 @@ form.addEventListener("submit", event => {
     renderPressureValues("#sbp-values", centiles.sbp);
     renderPressureValues("#dbp-values", centiles.dbp);
     renderPressureValues("#map-values", centiles.map);
+    renderPatientComparison(centiles, patientValues);
     const ageBasis = centiles.model === "day-one" ? "birth-gestation" : "corrected-gestation";
     document.querySelector("#interpolation-note").textContent = centiles.interpolated
       ? `Calculated by linear interpolation between the published ${centiles.lower}- and ${centiles.upper}-week ${ageBasis} rows.`
@@ -122,4 +167,4 @@ resetButton.addEventListener("click", () => {
   document.querySelector("#ga-weeks").focus();
 });
 
-if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues };
+if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure };
