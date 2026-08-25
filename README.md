@@ -1,22 +1,24 @@
 # Neonatal Blood Pressure Centile Calculator
 
-A dependency-free static web calculator for corrected gestational age and post-transitional neonatal blood pressure reference centiles.
+A dependency-free static web calculator for corrected gestational age and neonatal blood pressure reference centiles.
 
 ## What it calculates
 
 - Corrected gestational age from gestational age at birth plus day of life
-- Systolic, diastolic, and mean arterial pressure at the 50th, 95th, and 99th percentiles
-- Linear interpolation between the published 2-week PMA rows from 26 to 44 weeks
+- Systolic, diastolic, and mean arterial pressure at the 5th, 50th, and 95th centiles
+- Day 0–1 values indexed by birth gestation (22–42 weeks)
+- Values after day 1 indexed by corrected gestational age (24–46 weeks)
+- Linear interpolation between published whole-week rows
 - A prominent warning for infants younger than 14 days because early transitional BP changes rapidly
 - No extrapolation outside the source table
 
 ## Evidence basis
 
-The numerical table is the commonly cited postmenstrual-age compilation from:
+The numerical values reproduce the Philadelphia Neonatal Blood Pressure Study tables from:
 
-Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32. doi:10.1007/s00467-011-1921-z.
+Zubrow AB, et al. Determinants of blood pressure in infants admitted to neonatal intensive care units: a prospective multicenter study. J Perinatol. 1995;15:470-479.
 
-The clinical caveats and first-week warning reflect contemporary neonatal BP studies and measurement reviews cited in the app.
+Recent larger and age-specific studies are prioritized for interpretation and caveats. The Dionne upper-centile table is treated as a hypertension reference, not the default normative distribution. Full citations are displayed in the app.
 
 ## Run locally
 
