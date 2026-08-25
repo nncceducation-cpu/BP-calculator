@@ -13,7 +13,7 @@
     <div>
       <p class="eyebrow">Calgary Neonatal Neuro-Critical Care Program</p>
       <h1>Neonatal Blood Pressure Centile Calculator</h1>
-      <p class="subtitle">Postmenstrual age and oscillometric SBP, DBP, and MAP reference centiles</p>
+      <p class="subtitle">Corrected gestational age and SBP, DBP, and MAP 5th, 50th, and 95th reference centiles</p>
     </div>
   </header>
 
@@ -64,7 +64,7 @@
       </div>
 
       <div id="transition-warning" class="warning" hidden>
-        <strong>Transitional circulation:</strong> This infant is younger than 14 days. The centiles below are from a post-transitional PMA table and should not be used as first-week treatment thresholds. Blood pressure changes rapidly after birth.
+        <strong>Transitional circulation:</strong> Blood pressure changes rapidly during the first 14 days. These values are descriptive references and must not be used alone as treatment thresholds.
       </div>
 
       <div id="range-warning" class="warning danger" hidden></div>
@@ -75,7 +75,7 @@
             <p class="step-label">Step 3</p>
             <h2>Reference blood pressure centiles</h2>
           </div>
-          <span class="method-badge">Oscillometric reference</span>
+          <span class="method-badge">5th / 50th / 95th</span>
         </div>
 
         <div class="bp-grid">
@@ -115,14 +115,21 @@
       <details>
         <summary>Evidence sources and calculator method</summary>
         <div class="details-content">
-          <p>The calculator reproduces the 50th, 95th, and 99th percentile table compiled by Dionne, Abitbol, and Flynn for postmenstrual ages 26 to 44 weeks. Values between the published 2-week PMA rows use linear interpolation. No extrapolation is performed outside 26 to 44 weeks.</p>
-          <p>Recent first-week studies confirm strong effects of gestational age and postnatal age, but their centile models are method-specific. The early-age warning prevents the post-transitional table from being mistaken for a first-week nomogram.</p>
+          <p><strong>Numerical model:</strong> the calculator uses the Philadelphia Neonatal Blood Pressure Study reference values: birth gestation on days 0–1 (22–42 weeks), then corrected gestational age after day 1 (24–46 weeks). It reports 5th, 50th, and 95th centiles and linearly interpolates between whole-week rows; it never extrapolates.</p>
+          <p><strong>Why the values changed:</strong> the previously displayed Dionne table was developed to identify possible hypertension and emphasizes upper centiles. It is retained below as an important hypertension source but is not used as the calculator's default normative distribution. Newer large cohorts support strong gestational- and postnatal-age effects, but do not yet provide one complete, externally validated 5th/50th/95th SBP, DBP, and MAP table across the entire neonatal age range.</p>
           <ol>
-            <li>Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32.</li>
+            <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants. Neonatology. 2025;122:138-145.</li>
+            <li>Pfurtscheller K, et al. Non-invasive blood pressure monitoring immediately after birth in healthy term neonates. Pediatr Res. 2025.</li>
+            <li>Elsayed YN, Ahmed A. Normative blood pressure data in preterm infants &lt;29 weeks during the first 72 hours of life. J Perinatol. 2024;44:119-126.</li>
+            <li>Dore R, et al. Neonatal hypotension definition, treatment, and outcomes: a systematic review. Pediatr Res. 2024.</li>
             <li>van Zadelhoff AC, et al. Age-dependent changes in arterial blood pressure in neonates during the first week of life. Br J Anaesth. 2023;130:585-594.</li>
             <li>Kiss JK, et al. Oscillometric arterial blood pressure in haemodynamically stable neonates in the first 2 weeks of life. Pediatr Nephrol. 2023;38:3369-3378.</li>
-            <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants. Neonatology. 2025;122:138-145.</li>
+            <li>Goldsmith JP, Keels EL, eds. Guidelines for Perinatal Care. 9th ed. American Academy of Pediatrics; 2022.</li>
+            <li>Dionne JM. Hypertension in the neonate. Hypertension. 2021;77:10-20.</li>
             <li>Dionne JM, et al. Method of blood pressure measurement in neonates and infants. J Pediatr. 2020;221:23-31.e5.</li>
+            <li>Batton B. Neonatal blood pressure and hypertension. Clin Perinatol. 2020;47:29-40.</li>
+            <li>Zubrow AB, et al. Determinants of blood pressure in infants admitted to neonatal intensive care units: a prospective multicenter study. J Perinatol. 1995;15:470-479.</li>
+            <li>Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32.</li>
           </ol>
         </div>
       </details>
