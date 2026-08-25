@@ -49,6 +49,22 @@
           </div>
         </fieldset>
 
+        <fieldset class="patient-bp-fieldset">
+          <legend>Current blood pressure <span class="optional-label">Optional</span></legend>
+          <p class="field-help">Enter one or more measured values to compare them with the age-specific 5th centile.</p>
+          <div class="input-row bp-input-row">
+            <label>Systolic, mmHg
+              <input id="patient-sbp" name="patientSbp" type="number" min="1" max="200" step="1" inputmode="numeric" placeholder="SBP">
+            </label>
+            <label>Diastolic, mmHg
+              <input id="patient-dbp" name="patientDbp" type="number" min="1" max="150" step="1" inputmode="numeric" placeholder="DBP">
+            </label>
+            <label>Mean, mmHg
+              <input id="patient-map" name="patientMap" type="number" min="1" max="170" step="1" inputmode="numeric" placeholder="MAP">
+            </label>
+          </div>
+        </fieldset>
+
         <p id="form-error" class="error-message" role="alert" hidden></p>
         <button class="primary-button" type="submit">Calculate centiles</button>
       </form>
@@ -95,6 +111,18 @@
             <dl id="map-values"></dl>
           </article>
         </div>
+
+        <section id="patient-comparison" class="patient-comparison" aria-labelledby="comparison-heading" hidden>
+          <div class="comparison-heading">
+            <div>
+              <p class="step-label">Patient comparison</p>
+              <h3 id="comparison-heading">Current blood pressure versus 5th centile</h3>
+            </div>
+            <span class="comparison-rule">Low if below 5th centile</span>
+          </div>
+          <div id="comparison-grid" class="comparison-grid"></div>
+          <p class="comparison-caution">A green result means at or above the statistical 5th centile. It does not confirm adequate systemic or cerebral perfusion.</p>
+        </section>
 
         <p id="interpolation-note" class="fine-print"></p>
       </div>
