@@ -20,28 +20,34 @@ function calculateCga(gaWeeks, gaDays, dol) {
   };
 }
 
-function interpolateValues(decimalPma) {
-  if (decimalPma < BP_CENTILES[0].pma || decimalPma > BP_CENTILES.at(-1).pma) return null;
-  const exact = BP_CENTILES.find(row => row.pma === decimalPma);
-  if (exact) return { ...exact, interpolated: false, lower: exact.pma, upper: exact.pma };
+function interpolateTable(table, decimalAge) {
+  if (decimalAge < table[0].age || decimalAge > table.at(-1).age) return null;
+  const exact = table.find(row => row.age === decimalAge);
+  if (exact) return { ...exact, interpolated: false, lower: exact.age, upper: exact.age };
 
-  const upperIndex = BP_CENTILES.findIndex(row => row.pma > decimalPma);
-  const lower = BP_CENTILES[upperIndex - 1];
-  const upper = BP_CENTILES[upperIndex];
-  const fraction = (decimalPma - lower.pma) / (upper.pma - lower.pma);
+  const upperIndex = table.findIndex(row => row.age > decimalAge);
+  const lower = table[upperIndex - 1];
+  const upper = table[upperIndex];
+  const fraction = (decimalAge - lower.age) / (upper.age - lower.age);
   const interpolateSeries = name => lower[name].map((value, index) =>
     roundOne(value + fraction * (upper[name][index] - value))
   );
 
   return {
-    pma: decimalPma,
+    age: decimalAge,
     sbp: interpolateSeries("sbp"),
     dbp: interpolateSeries("dbp"),
     map: interpolateSeries("map"),
     interpolated: true,
-    lower: lower.pma,
-    upper: upper.pma
+    lower: lower.age,
+    upper: upper.age
   };
+}
+
+function referenceValues(gaDecimal, cgaDecimal, dol) {
+  const isDayOne = dol <= 1;
+  const values = interpolateTable(isDayOne ? DAY_ONE_BP : CORRECTED_AGE_BP, isDayOne ? gaDecimal : cgaDecimal);
+  return values ? { ...values, model: isDayOne ? "day-one" : "corrected-age" } : null;
 }
 
 function renderPressureValues(elementId, values) {
@@ -80,25 +86,29 @@ form.addEventListener("submit", event => {
   if (!validateInteger(dol, 0, 154)) return showError("Enter an integer day of life from 0 to 154.");
 
   const cga = calculateCga(gaWeeks, gaDays, dol);
+  const gaDecimal = gaWeeks + gaDays / 7;
   document.querySelector("#cga-display").innerHTML = `<strong>${cga.weeks}</strong> weeks <strong>${cga.days}</strong> days`;
   transitionWarning.hidden = dol >= 14;
 
-  const centiles = interpolateValues(cga.decimalWeeks);
+  const centiles = referenceValues(gaDecimal, cga.decimalWeeks, dol);
   results.hidden = false;
 
   if (!centiles) {
     centileContent.hidden = true;
     rangeWarning.hidden = false;
-    rangeWarning.textContent = `The corrected gestational age is ${cga.weeks}+${cga.days} weeks. The selected reference table covers 26+0 to 44+0 weeks only. No value has been extrapolated.`;
+    rangeWarning.textContent = dol <= 1
+      ? `Birth gestation is outside the 22+0 to 42+0 week day-one reference. No value has been extrapolated.`
+      : `Corrected gestational age is ${cga.weeks}+${cga.days} weeks. The corrected-age reference covers 24+0 to 46+0 weeks. No value has been extrapolated.`;
   } else {
     centileContent.hidden = false;
     rangeWarning.hidden = true;
     renderPressureValues("#sbp-values", centiles.sbp);
     renderPressureValues("#dbp-values", centiles.dbp);
     renderPressureValues("#map-values", centiles.map);
+    const ageBasis = centiles.model === "day-one" ? "birth-gestation" : "corrected-gestation";
     document.querySelector("#interpolation-note").textContent = centiles.interpolated
-      ? `Calculated by linear interpolation between the published ${centiles.lower}- and ${centiles.upper}-week PMA rows.`
-      : `Matches the published ${centiles.lower}-week PMA row without interpolation.`;
+      ? `Calculated by linear interpolation between the published ${centiles.lower}- and ${centiles.upper}-week ${ageBasis} rows.`
+      : `Matches the published ${centiles.lower}-week ${ageBasis} row without interpolation.`;
   }
 
   results.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -112,6 +122,4 @@ resetButton.addEventListener("click", () => {
   document.querySelector("#ga-weeks").focus();
 });
 
-if (typeof module !== "undefined") {
-  module.exports = { calculateCga, interpolateValues };
-}
+if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues };
