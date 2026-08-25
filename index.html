@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Calculate corrected gestational age and neonatal blood pressure reference centiles.">
+  <title>Neonatal Blood Pressure Centile Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-mark" aria-hidden="true">NNCC</div>
+    <div>
+      <p class="eyebrow">Calgary Neonatal Neuro-Critical Care Program</p>
+      <h1>Neonatal Blood Pressure Centile Calculator</h1>
+      <p class="subtitle">Postmenstrual age and oscillometric SBP, DBP, and MAP reference centiles</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="calculator-card" aria-labelledby="calculator-heading">
+      <div class="section-heading">
+        <div>
+          <p class="step-label">Step 1</p>
+          <h2 id="calculator-heading">Enter age at birth and today</h2>
+        </div>
+        <button id="reset-button" class="text-button" type="button">Reset</button>
+      </div>
+
+      <form id="bp-form" novalidate>
+        <fieldset>
+          <legend>Gestational age at birth</legend>
+          <div class="input-row">
+            <label>Weeks
+              <input id="ga-weeks" name="gaWeeks" type="number" min="22" max="42" step="1" inputmode="numeric" placeholder="e.g., 28" required>
+            </label>
+            <label>Days
+              <input id="ga-days" name="gaDays" type="number" min="0" max="6" step="1" inputmode="numeric" value="0" required>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Postnatal age</legend>
+          <div class="input-row">
+            <label>Days of life
+              <input id="dol" name="dol" type="number" min="0" max="154" step="1" inputmode="numeric" placeholder="e.g., 18" required>
+            </label>
+          </div>
+        </fieldset>
+
+        <p id="form-error" class="error-message" role="alert" hidden></p>
+        <button class="primary-button" type="submit">Calculate centiles</button>
+      </form>
+    </section>
+
+    <section id="results" class="results" aria-live="polite" hidden>
+      <div class="age-result">
+        <div>
+          <p class="step-label">Step 2</p>
+          <h2>Corrected gestational age</h2>
+        </div>
+        <p id="cga-display" class="cga-display"></p>
+      </div>
+
+      <div id="transition-warning" class="warning" hidden>
+        <strong>Transitional circulation:</strong> This infant is younger than 14 days. The centiles below are from a post-transitional PMA table and should not be used as first-week treatment thresholds. Blood pressure changes rapidly after birth.
+      </div>
+
+      <div id="range-warning" class="warning danger" hidden></div>
+
+      <div id="centile-content">
+        <div class="section-heading">
+          <div>
+            <p class="step-label">Step 3</p>
+            <h2>Reference blood pressure centiles</h2>
+          </div>
+          <span class="method-badge">Oscillometric reference</span>
+        </div>
+
+        <div class="bp-grid">
+          <article class="bp-card sbp">
+            <h3>Systolic</h3>
+            <p class="abbreviation">SBP, mmHg</p>
+            <dl id="sbp-values"></dl>
+          </article>
+          <article class="bp-card dbp">
+            <h3>Diastolic</h3>
+            <p class="abbreviation">DBP, mmHg</p>
+            <dl id="dbp-values"></dl>
+          </article>
+          <article class="bp-card map">
+            <h3>Mean arterial</h3>
+            <p class="abbreviation">MAP, mmHg</p>
+            <dl id="map-values"></dl>
+          </article>
+        </div>
+
+        <p id="interpolation-note" class="fine-print"></p>
+      </div>
+    </section>
+
+    <section class="evidence-card">
+      <h2>How to interpret the result</h2>
+      <div class="evidence-grid">
+        <div>
+          <h3>Reference, not a treatment threshold</h3>
+          <p>These centiles describe a population distribution. They do not define adequate organ perfusion and have not been validated as treatment triggers.</p>
+        </div>
+        <div>
+          <h3>Measurement method matters</h3>
+          <p>Use a correctly sized cuff on a settled infant. Oscillometric SBP can exceed intra-arterial SBP, especially at low pressures. MAP generally shows the closest agreement.</p>
+        </div>
+      </div>
+      <details>
+        <summary>Evidence sources and calculator method</summary>
+        <div class="details-content">
+          <p>The calculator reproduces the 50th, 95th, and 99th percentile table compiled by Dionne, Abitbol, and Flynn for postmenstrual ages 26 to 44 weeks. Values between the published 2-week PMA rows use linear interpolation. No extrapolation is performed outside 26 to 44 weeks.</p>
+          <p>Recent first-week studies confirm strong effects of gestational age and postnatal age, but their centile models are method-specific. The early-age warning prevents the post-transitional table from being mistaken for a first-week nomogram.</p>
+          <ol>
+            <li>Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32.</li>
+            <li>van Zadelhoff AC, et al. Age-dependent changes in arterial blood pressure in neonates during the first week of life. Br J Anaesth. 2023;130:585-594.</li>
+            <li>Kiss JK, et al. Oscillometric arterial blood pressure in haemodynamically stable neonates in the first 2 weeks of life. Pediatr Nephrol. 2023;38:3369-3378.</li>
+            <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants. Neonatology. 2025;122:138-145.</li>
+            <li>Dionne JM, et al. Method of blood pressure measurement in neonates and infants. J Pediatr. 2020;221:23-31.e5.</li>
+          </ol>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <p>Educational reference only. Assess blood pressure with clinical perfusion, urine output, lactate, echocardiography when indicated, and the infant's overall condition.</p>
+  </footer>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
