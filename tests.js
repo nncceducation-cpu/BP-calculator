@@ -10,11 +10,11 @@ const fs = require("fs");
 const vm = require("vm");
 const source = fs.readFileSync("app.js", "utf8")
   .replace(/const form = document[\s\S]*?function roundOne/, "function roundOne")
-  .replace(/form\.addEventListener[\s\S]*$/, "module.exports = { calculateCga, interpolateTable, referenceValues };");
+  .replace(/form\.addEventListener[\s\S]*$/, "module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure };");
 const context = { module: { exports: {} }, DAY_ONE_BP, CORRECTED_AGE_BP };
 vm.createContext(context);
 vm.runInContext(source, context);
-const { calculateCga, interpolateTable, referenceValues } = context.module.exports;
+const { calculateCga, interpolateTable, referenceValues, classifyPressure } = context.module.exports;
 function assert(condition, message) { if (!condition) throw new Error(message); }
 const cga = calculateCga(28, 4, 18);
 assert(cga.weeks === 31 && cga.days === 1, "CGA calculation failed");
@@ -26,4 +26,6 @@ const midpoint = interpolateTable(CORRECTED_AGE_BP, 24.5);
 assert(midpoint.sbp[0] === 34.5 && midpoint.map[1] === 36.5, "Interpolation failed");
 assert(interpolateTable(CORRECTED_AGE_BP, 23.9) === null, "Lower guard failed");
 assert(interpolateTable(CORRECTED_AGE_BP, 25.1) === null, "Upper guard failed");
+assert(classifyPressure(19, 20) === "low", "Low BP classification failed");
+assert(classifyPressure(20, 20) === "acceptable", "Boundary BP classification failed");
 console.log("All calculator tests passed.");
