@@ -9,6 +9,8 @@ A dependency-free static web calculator for corrected gestational age and neonat
 - Day 0–1 values indexed by birth gestation (22–42 weeks)
 - Values after day 1 indexed by corrected gestational age (24–46 weeks)
 - Linear interpolation between published whole-week rows
+- Optional patient SBP, DBP, and MAP comparison with the age-specific 5th centile
+- Red status below the 5th centile and green status at or above it
 - A prominent warning for infants younger than 14 days because early transitional BP changes rapidly
 - No extrapolation outside the source table
 
