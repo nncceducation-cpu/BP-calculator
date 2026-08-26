@@ -11,6 +11,8 @@ A dependency-free static web calculator for corrected gestational age and neonat
 - Linear interpolation between published whole-week rows
 - Optional patient SBP, DBP, and MAP comparison with the age-specific 5th centile
 - Red status below the 5th centile and green status at or above it
+- Separate hypertension tab for infants aged 14 days or older
+- Dionne 50th, 95th, and 99th postmenstrual-age references with patient BP comparison
 - A prominent warning for infants younger than 14 days because early transitional BP changes rapidly
 - No extrapolation outside the source table
 
