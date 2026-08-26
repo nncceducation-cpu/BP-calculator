@@ -63,7 +63,7 @@ workflows:
     max_build_duration: 60
     environment:
       android_signing:
-        - bp_upload_keystore
+        - hie_upload_keystore
       vars:
         PACKAGE_NAME: "ca.nncceducation.neonatalbp"
       node: 20
