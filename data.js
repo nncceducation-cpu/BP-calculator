@@ -51,3 +51,20 @@ const CORRECTED_AGE_BP = [
 ];
 
 const CENTILE_LABELS = ["5th", "50th", "95th"];
+
+// Post-transitional hypertension reference compiled by Dionne et al.
+// Pressure arrays are ordered: 50th, 95th, 99th.
+const HYPERTENSION_BP = [
+  { age: 26, sbp: [55,72,77], dbp: [30,50,56], map: [38,57,63] },
+  { age: 28, sbp: [60,75,80], dbp: [38,50,54], map: [45,58,63] },
+  { age: 30, sbp: [65,80,85], dbp: [40,55,60], map: [48,63,68] },
+  { age: 32, sbp: [68,83,88], dbp: [40,55,60], map: [48,62,69] },
+  { age: 34, sbp: [70,85,90], dbp: [40,55,60], map: [50,65,70] },
+  { age: 36, sbp: [72,87,92], dbp: [50,65,70], map: [57,72,77] },
+  { age: 38, sbp: [77,92,97], dbp: [50,65,70], map: [59,74,79] },
+  { age: 40, sbp: [80,95,100], dbp: [50,65,70], map: [60,75,80] },
+  { age: 42, sbp: [85,98,102], dbp: [50,65,70], map: [62,76,81] },
+  { age: 44, sbp: [88,105,110], dbp: [50,68,73], map: [63,80,85] }
+];
+
+const HYPERTENSION_CENTILE_LABELS = ["50th", "95th", "99th"];
