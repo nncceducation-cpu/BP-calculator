@@ -153,6 +153,7 @@ dd span { color: var(--muted); font-size: 0.72rem; }
 .comparison-card { display: flex; gap: 0.8rem; border: 1px solid; border-radius: 16px; padding: 1rem; }
 .comparison-card.low { border-color: #efb8bc; background: var(--red-soft); color: var(--red); }
 .comparison-card.acceptable { border-color: #a8d9c1; background: var(--green-soft); color: var(--green); }
+.comparison-card.high { border-color: #efce96; background: #fff7e8; color: #9a5300; }
 .comparison-card.below-95 { border-color: #a8d9c1; background: var(--green-soft); color: var(--green); }
 .comparison-card.elevated { border-color: #efce96; background: #fff7e8; color: #9a5300; }
 .comparison-card.markedly-elevated { border-color: #efb8bc; background: var(--red-soft); color: var(--red); }
