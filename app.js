@@ -50,8 +50,10 @@ function referenceValues(gaDecimal, cgaDecimal, dol) {
   return values ? { ...values, model: isDayOne ? "day-one" : "corrected-age" } : null;
 }
 
-function classifyPressure(value, fifthCentile) {
-  return value < fifthCentile ? "low" : "acceptable";
+function classifyPressure(value, fifthCentile, ninetyFifthCentile) {
+  if (value < fifthCentile) return "low";
+  if (value > ninetyFifthCentile) return "high";
+  return "acceptable";
 }
 
 function classifyHypertension(value, percentile95, percentile99) {
@@ -79,24 +81,25 @@ function renderPatientComparison(centiles, patientValues) {
   const comparison = document.querySelector("#patient-comparison");
   const grid = document.querySelector("#comparison-grid");
   const pressures = [
-    { label: "Systolic", short: "SBP", value: patientValues.sbp, fifth: centiles.sbp[0] },
-    { label: "Diastolic", short: "DBP", value: patientValues.dbp, fifth: centiles.dbp[0] },
-    { label: "Mean arterial", short: "MAP", value: patientValues.map, fifth: centiles.map[0] }
+    { label: "Systolic", short: "SBP", value: patientValues.sbp, fifth: centiles.sbp[0], ninetyFifth: centiles.sbp[2] },
+    { label: "Diastolic", short: "DBP", value: patientValues.dbp, fifth: centiles.dbp[0], ninetyFifth: centiles.dbp[2] },
+    { label: "Mean arterial", short: "MAP", value: patientValues.map, fifth: centiles.map[0], ninetyFifth: centiles.map[2] }
   ].filter(item => item.value !== null);
 
   comparison.hidden = pressures.length === 0;
   grid.replaceChildren();
   pressures.forEach(item => {
-    const status = classifyPressure(item.value, item.fifth);
+    const status = classifyPressure(item.value, item.fifth, item.ninetyFifth);
+    const statusText = status === "low" ? "Below 5th centile" : status === "high" ? "Above 95th centile" : "Within 5th-95th centiles";
     const card = document.createElement("article");
     card.className = `comparison-card ${status}`;
     card.innerHTML = `
-      <div class="status-icon" aria-hidden="true">${status === "low" ? "!" : "✓"}</div>
+      <div class="status-icon" aria-hidden="true">${status === "acceptable" ? "✓" : "!"}</div>
       <div>
         <p class="comparison-name">${item.label} (${item.short})</p>
         <p class="comparison-value"><strong>${item.value}</strong> mmHg</p>
-        <p class="comparison-status">${status === "low" ? "Low" : "Acceptable"}</p>
-        <p class="comparison-threshold">5th centile: ${item.fifth} mmHg</p>
+        <p class="comparison-status">${statusText}</p>
+        <p class="comparison-threshold">5th: ${item.fifth} · 95th: ${item.ninetyFifth} mmHg</p>
       </div>`;
     grid.append(card);
   });
