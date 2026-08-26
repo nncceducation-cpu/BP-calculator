@@ -34,6 +34,8 @@ Run the calculation checks with:
 node tests.js
 ```
 
+The verification suite currently performs 73,737 checks across every published row, each daily interpolation point, all supported gestational-age and day-of-life combinations, and every classification boundary.
+
 ## GitHub Pages
 
 In the repository settings, select **Pages**, choose **Deploy from a branch**, and publish the root of the `main` branch.
