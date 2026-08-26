@@ -18,7 +18,12 @@
   </header>
 
   <main>
-    <section class="calculator-card" aria-labelledby="calculator-heading">
+    <nav class="calculator-tabs" aria-label="Blood pressure calculator modes" role="tablist">
+      <button id="normative-tab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="normative-panel" data-tab="normative">Normative centiles</button>
+      <button id="hypertension-tab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="hypertension-panel" data-tab="hypertension">Hypertension</button>
+    </nav>
+
+    <section id="normative-panel" class="calculator-card" aria-labelledby="calculator-heading" data-panel="normative">
       <div class="section-heading">
         <div>
           <p class="step-label">Step 1</p>
@@ -70,7 +75,7 @@
       </form>
     </section>
 
-    <section id="results" class="results" aria-live="polite" hidden>
+    <section id="results" class="results" aria-live="polite" data-panel="normative" hidden>
       <div class="age-result">
         <div>
           <p class="step-label">Step 2</p>
@@ -128,7 +133,7 @@
       </div>
     </section>
 
-    <section class="evidence-card">
+    <section class="evidence-card" data-panel="normative">
       <h2>How to interpret the result</h2>
       <div class="evidence-grid">
         <div>
@@ -161,6 +166,97 @@
           </ol>
         </div>
       </details>
+    </section>
+
+    <section id="hypertension-panel" class="hypertension-panel tab-panel-hidden" data-panel="hypertension" role="tabpanel" aria-labelledby="hypertension-tab">
+      <section class="calculator-card" aria-labelledby="hypertension-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step-label">Older neonates</p>
+            <h2 id="hypertension-heading">Hypertension reference calculator</h2>
+            <p class="field-help htn-intro">For infants aged 14 days or older. Values are indexed by corrected gestational age.</p>
+          </div>
+          <button id="htn-reset-button" class="text-button" type="button">Reset</button>
+        </div>
+
+        <form id="htn-form" novalidate>
+          <fieldset>
+            <legend>Gestational age at birth</legend>
+            <div class="input-row">
+              <label>Weeks
+                <input id="htn-ga-weeks" type="number" min="22" max="42" step="1" inputmode="numeric" placeholder="e.g., 30" required>
+              </label>
+              <label>Days
+                <input id="htn-ga-days" type="number" min="0" max="6" step="1" inputmode="numeric" value="0" required>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Postnatal age</legend>
+            <div class="input-row">
+              <label>Days of life
+                <input id="htn-dol" type="number" min="14" max="154" step="1" inputmode="numeric" placeholder="e.g., 21" required>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset class="patient-bp-fieldset">
+            <legend>Current blood pressure <span class="optional-label">Optional</span></legend>
+            <p class="field-help">Enter one or more values to compare them with the 95th and 99th centiles.</p>
+            <div class="input-row bp-input-row">
+              <label>Systolic, mmHg
+                <input id="htn-patient-sbp" type="number" min="1" max="200" step="1" inputmode="numeric" placeholder="SBP">
+              </label>
+              <label>Diastolic, mmHg
+                <input id="htn-patient-dbp" type="number" min="1" max="150" step="1" inputmode="numeric" placeholder="DBP">
+              </label>
+              <label>Mean, mmHg
+                <input id="htn-patient-map" type="number" min="1" max="170" step="1" inputmode="numeric" placeholder="MAP">
+              </label>
+            </div>
+          </fieldset>
+          <p id="htn-form-error" class="error-message" role="alert" hidden></p>
+          <button class="primary-button htn-button" type="submit">Assess hypertension centiles</button>
+        </form>
+      </section>
+
+      <section id="htn-results" class="results htn-results" aria-live="polite" hidden>
+        <div class="age-result">
+          <div><p class="step-label">Corrected gestational age</p><h2>Hypertension reference</h2></div>
+          <p id="htn-cga-display" class="cga-display"></p>
+        </div>
+        <div id="htn-range-warning" class="warning danger" hidden></div>
+        <div id="htn-centile-content">
+          <div class="section-heading">
+            <div><p class="step-label">Post-transitional reference</p><h2>50th, 95th, and 99th centiles</h2></div>
+            <span class="method-badge htn-badge">Dionne reference</span>
+          </div>
+          <div class="bp-grid">
+            <article class="bp-card sbp"><h3>Systolic</h3><p class="abbreviation">SBP, mmHg</p><dl id="htn-sbp-values"></dl></article>
+            <article class="bp-card dbp"><h3>Diastolic</h3><p class="abbreviation">DBP, mmHg</p><dl id="htn-dbp-values"></dl></article>
+            <article class="bp-card map"><h3>Mean arterial</h3><p class="abbreviation">MAP, mmHg</p><dl id="htn-map-values"></dl></article>
+          </div>
+          <section id="htn-comparison" class="patient-comparison" hidden>
+            <div class="comparison-heading"><div><p class="step-label">Patient comparison</p><h3>Current BP versus upper centiles</h3></div><span class="comparison-rule htn-rule">Confirm on repeated measurements</span></div>
+            <div id="htn-comparison-grid" class="comparison-grid"></div>
+            <p class="comparison-caution">A single elevated reading does not establish neonatal hypertension. Confirm measurement technique and persistence on separate occasions, then interpret with the clinical context.</p>
+          </section>
+          <p id="htn-interpolation-note" class="fine-print"></p>
+        </div>
+      </section>
+
+      <section class="evidence-card htn-evidence">
+        <h2>Hypertension interpretation</h2>
+        <p>Values at or above the 95th centile are flagged as elevated. Values at or above the 99th centile are flagged as markedly elevated. The table applies after the first two postnatal weeks and covers corrected gestational ages 26 to 44 weeks.</p>
+        <details>
+          <summary>Hypertension evidence sources</summary>
+          <div class="details-content"><ol>
+            <li>Dionne JM. Hypertension in the neonate. Hypertension. 2021;77:10-20.</li>
+            <li>Dionne JM, et al. Method of blood pressure measurement in neonates and infants. J Pediatr. 2020;221:23-31.e5.</li>
+            <li>Batton B. Neonatal blood pressure and hypertension. Clin Perinatol. 2020;47:29-40.</li>
+            <li>Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32.</li>
+          </ol></div>
+        </details>
+      </section>
     </section>
   </main>
 
