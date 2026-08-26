@@ -1,0 +1,10 @@
+node_modules/
+ios/
+android/
+www/
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+keystore_base64.txt
+upload_certificate.pem

@@ -1,0 +1,22 @@
+{
+  "name": "neonatal-bp-centile-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Neonatal blood pressure centile and hypertension calculator",
+  "scripts": {
+    "test": "node tests.js",
+    "build": "node tests.js",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^5.6.3"
+  }
+}

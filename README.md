@@ -2,6 +2,8 @@
 
 A dependency-free static web calculator for corrected gestational age and neonatal blood pressure reference centiles.
 
+The repository also contains Capacitor and Codemagic configuration for signed iOS and Android store builds. The mobile package identifier is `com.nncceducation.neonatalbp`.
+
 ## What it calculates
 
 - Corrected gestational age from gestational age at birth plus day of life

@@ -1,0 +1,9 @@
+{
+  "appId": "com.nncceducation.neonatalbp",
+  "appName": "Neonatal BP Centiles",
+  "webDir": "www",
+  "server": {
+    "iosScheme": "https",
+    "androidScheme": "https"
+  }
+}
