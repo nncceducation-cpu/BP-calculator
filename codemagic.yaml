@@ -7,7 +7,7 @@ workflows:
       app_store_connect: AppStoreConnectKey
     environment:
       vars:
-        BUNDLE_ID: "com.nncceducation.neonatalbp"
+        BUNDLE_ID: "ca.nncceducation.neonatalbp"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: 20
@@ -65,7 +65,7 @@ workflows:
       android_signing:
         - bp_upload_keystore
       vars:
-        PACKAGE_NAME: "com.nncceducation.neonatalbp"
+        PACKAGE_NAME: "ca.nncceducation.neonatalbp"
       node: 20
       java: 21
     scripts:

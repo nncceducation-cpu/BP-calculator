@@ -4,7 +4,7 @@
 
 - App name: Neonatal BP Centile Calculator
 - Short device name: Neonatal BP Centiles
-- Bundle ID and Android package: `com.nncceducation.neonatalbp`
+- Bundle ID and Android package: `ca.nncceducation.neonatalbp`
 - Version: 1.0
 - Primary language: English (Canada)
 - Category: Education
