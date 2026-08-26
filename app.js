@@ -54,6 +54,12 @@ function classifyPressure(value, fifthCentile) {
   return value < fifthCentile ? "low" : "acceptable";
 }
 
+function classifyHypertension(value, percentile95, percentile99) {
+  if (value >= percentile99) return "markedly-elevated";
+  if (value >= percentile95) return "elevated";
+  return "below-95";
+}
+
 function renderPressureValues(elementId, values) {
   const list = document.querySelector(elementId);
   list.replaceChildren();
@@ -92,6 +98,37 @@ function renderPatientComparison(centiles, patientValues) {
         <p class="comparison-status">${status === "low" ? "Low" : "Acceptable"}</p>
         <p class="comparison-threshold">5th centile: ${item.fifth} mmHg</p>
       </div>`;
+    grid.append(card);
+  });
+}
+
+function renderHypertensionValues(elementId, values) {
+  const list = document.querySelector(elementId);
+  list.replaceChildren();
+  values.forEach((value, index) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = `centile-row htn-centile-${index}`;
+    wrapper.innerHTML = `<dt>${HYPERTENSION_CENTILE_LABELS[index]}</dt><dd><strong>${value}</strong> <span>mmHg</span></dd>`;
+    list.append(wrapper);
+  });
+}
+
+function renderHypertensionComparison(centiles, patientValues) {
+  const comparison = document.querySelector("#htn-comparison");
+  const grid = document.querySelector("#htn-comparison-grid");
+  const pressures = [
+    { label: "Systolic", short: "SBP", value: patientValues.sbp, values: centiles.sbp },
+    { label: "Diastolic", short: "DBP", value: patientValues.dbp, values: centiles.dbp },
+    { label: "Mean arterial", short: "MAP", value: patientValues.map, values: centiles.map }
+  ].filter(item => item.value !== null);
+  comparison.hidden = pressures.length === 0;
+  grid.replaceChildren();
+  pressures.forEach(item => {
+    const status = classifyHypertension(item.value, item.values[1], item.values[2]);
+    const statusText = status === "markedly-elevated" ? "At or above 99th" : status === "elevated" ? "At or above 95th" : "Below 95th";
+    const card = document.createElement("article");
+    card.className = `comparison-card ${status}`;
+    card.innerHTML = `<div class="status-icon" aria-hidden="true">${status === "below-95" ? "✓" : "!"}</div><div><p class="comparison-name">${item.label} (${item.short})</p><p class="comparison-value"><strong>${item.value}</strong> mmHg</p><p class="comparison-status">${statusText}</p><p class="comparison-threshold">95th: ${item.values[1]} · 99th: ${item.values[2]} mmHg</p></div>`;
     grid.append(card);
   });
 }
@@ -167,4 +204,62 @@ resetButton.addEventListener("click", () => {
   document.querySelector("#ga-weeks").focus();
 });
 
-if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure };
+document.querySelectorAll(".tab-button").forEach(button => {
+  button.addEventListener("click", () => {
+    const selected = button.dataset.tab;
+    document.querySelectorAll(".tab-button").forEach(tab => {
+      const active = tab === button;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-selected", String(active));
+    });
+    document.querySelectorAll("[data-panel]").forEach(panel => { panel.classList.toggle("tab-panel-hidden", panel.dataset.panel !== selected); });
+  });
+});
+
+const htnForm = document.querySelector("#htn-form");
+const htnError = document.querySelector("#htn-form-error");
+const htnResults = document.querySelector("#htn-results");
+htnForm.addEventListener("submit", event => {
+  event.preventDefault();
+  htnError.hidden = true;
+  const gaWeeks = Number(document.querySelector("#htn-ga-weeks").value);
+  const gaDays = Number(document.querySelector("#htn-ga-days").value);
+  const dol = Number(document.querySelector("#htn-dol").value);
+  const readHtnPressure = id => { const raw = document.querySelector(id).value.trim(); return raw === "" ? null : Number(raw); };
+  const patientValues = { sbp: readHtnPressure("#htn-patient-sbp"), dbp: readHtnPressure("#htn-patient-dbp"), map: readHtnPressure("#htn-patient-map") };
+  const showHtnError = message => { htnError.textContent = message; htnError.hidden = false; };
+  if (!validateInteger(gaWeeks, 22, 42)) return showHtnError("Enter birth gestation from 22 to 42 completed weeks.");
+  if (!validateInteger(gaDays, 0, 6)) return showHtnError("Enter 0 to 6 additional gestational days.");
+  if (!validateInteger(dol, 14, 154)) return showHtnError("This hypertension reference applies from day 14. Enter a day of life from 14 to 154.");
+  if (Object.values(patientValues).some(value => value !== null && (!Number.isFinite(value) || value < 1 || value > 200))) return showHtnError("Enter blood pressure values from 1 to 200 mmHg, or leave the fields blank.");
+
+  const cga = calculateCga(gaWeeks, gaDays, dol);
+  const centiles = interpolateTable(HYPERTENSION_BP, cga.decimalWeeks);
+  document.querySelector("#htn-cga-display").innerHTML = `<strong>${cga.weeks}</strong> weeks <strong>${cga.days}</strong> days`;
+  htnResults.hidden = false;
+  if (!centiles) {
+    document.querySelector("#htn-centile-content").hidden = true;
+    const warning = document.querySelector("#htn-range-warning");
+    warning.hidden = false;
+    warning.textContent = `Corrected gestational age is ${cga.weeks}+${cga.days} weeks. The hypertension reference covers 26+0 to 44+0 weeks. No value has been extrapolated.`;
+  } else {
+    document.querySelector("#htn-centile-content").hidden = false;
+    document.querySelector("#htn-range-warning").hidden = true;
+    renderHypertensionValues("#htn-sbp-values", centiles.sbp);
+    renderHypertensionValues("#htn-dbp-values", centiles.dbp);
+    renderHypertensionValues("#htn-map-values", centiles.map);
+    renderHypertensionComparison(centiles, patientValues);
+    document.querySelector("#htn-interpolation-note").textContent = centiles.interpolated ? `Linear interpolation between the ${centiles.lower}- and ${centiles.upper}-week PMA rows.` : `Published ${centiles.lower}-week PMA row.`;
+  }
+  htnResults.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.querySelector("#htn-reset-button").addEventListener("click", () => {
+  htnForm.reset();
+  document.querySelector("#htn-ga-days").value = "0";
+  htnResults.hidden = true;
+  htnError.hidden = true;
+  document.querySelector("#htn-ga-weeks").focus();
+});
+
+if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure, classifyHypertension };
