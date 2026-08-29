@@ -89,6 +89,25 @@ legend { margin-bottom: 0.65rem; font-weight: 750; }
 .field-help { margin: -0.3rem 0 0.75rem; color: var(--muted); font-size: 0.82rem; }
 .input-row label, .select-label { display: grid; gap: 0.4rem; color: var(--muted); font-size: 0.88rem; font-weight: 650; }
 .select-label { max-width: 620px; }
+.reference-model-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; max-width: 820px; }
+.reference-model-tab {
+  min-width: 0;
+  border: 1px solid #b9cbd7;
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--navy);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.9rem 1rem;
+  text-align: left;
+}
+.reference-model-tab span { display: block; font-weight: 800; }
+.reference-model-tab small { display: block; margin-top: 0.2rem; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+.reference-model-tab.active { border-color: var(--blue); background: #eef7fd; box-shadow: 0 0 0 2px rgba(29, 111, 163, 0.14); }
+.reference-model-tab.active::after { content: "Selected"; display: inline-block; margin-top: 0.45rem; border-radius: 999px; background: var(--navy); color: white; font-size: 0.66rem; font-weight: 800; padding: 0.18rem 0.48rem; }
+.reference-model-tab:focus-visible { outline: 3px solid rgba(29, 111, 163, 0.22); outline-offset: 2px; }
+.other-reference-label { margin-top: 0.85rem; }
+.other-reference-label select.active { border-color: var(--blue); background: #eef7fd; box-shadow: 0 0 0 2px rgba(29, 111, 163, 0.14); }
 input, select {
   width: 100%;
   border: 1px solid #b9cbd7;
@@ -196,6 +215,8 @@ footer { padding: 1.5rem 0 3rem; color: var(--muted); font-size: 0.82rem; text-a
   .site-header { gap: 0.8rem; }
   .eyebrow { display: none; }
   .input-row { grid-template-columns: 1fr; }
+  .reference-model-tab { padding: 0.75rem; }
+  .reference-model-tab small { font-size: 0.68rem; }
   .method-badge { display: none; }
 }
 

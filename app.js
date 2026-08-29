@@ -5,6 +5,29 @@ const errorBox = document.querySelector("#form-error");
 const centileContent = document.querySelector("#centile-content");
 const rangeWarning = document.querySelector("#range-warning");
 const transitionWarning = document.querySelector("#transition-warning");
+const referenceModelInput = document.querySelector("#reference-model");
+const otherReferenceModel = document.querySelector("#other-reference-model");
+const referenceModelTabs = [...document.querySelectorAll(".reference-model-tab")];
+
+function selectReferenceModel(model) {
+  referenceModelInput.value = model;
+  referenceModelTabs.forEach(button => {
+    const active = button.dataset.referenceModel === model;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  const selectedFromDropdown = [...otherReferenceModel.options].some(option => option.value === model);
+  otherReferenceModel.value = selectedFromDropdown ? model : "";
+  otherReferenceModel.classList.toggle("active", selectedFromDropdown);
+}
+
+referenceModelTabs.forEach(button => {
+  button.addEventListener("click", () => selectReferenceModel(button.dataset.referenceModel));
+});
+
+otherReferenceModel.addEventListener("change", () => {
+  if (otherReferenceModel.value) selectReferenceModel(otherReferenceModel.value);
+});
 
 function roundOne(value) {
   return Math.round(value * 10) / 10;
@@ -199,7 +222,7 @@ form.addEventListener("submit", event => {
   const gaDays = Number(document.querySelector("#ga-days").value);
   const dol = Number(document.querySelector("#dol").value);
   const postnatalHours = Number(document.querySelector("#postnatal-hours").value);
-  const selectedModel = document.querySelector("#reference-model").value;
+  const selectedModel = referenceModelInput.value;
   const readOptionalPressure = id => {
     const raw = document.querySelector(id).value.trim();
     return raw === "" ? null : Number(raw);
@@ -317,7 +340,7 @@ resetButton.addEventListener("click", () => {
   form.reset();
   document.querySelector("#ga-days").value = "0";
   document.querySelector("#postnatal-hours").value = "0";
-  document.querySelector("#reference-model").value = "philadelphia";
+  selectReferenceModel("philadelphia");
   results.hidden = true;
   errorBox.hidden = true;
   document.querySelector("#ga-weeks").focus();

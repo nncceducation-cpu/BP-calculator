@@ -63,15 +63,25 @@
 
         <fieldset>
           <legend>Reference model</legend>
-          <label class="select-label">Model
-            <select id="reference-model" name="referenceModel">
-              <option value="philadelphia">Zubrow 1995 - historical oscillometric chart (default)</option>
+          <div class="reference-model-tabs" role="group" aria-label="Primary reference models">
+            <button class="reference-model-tab" type="button" data-reference-model="hillman-weekly" aria-pressed="false">
+              <span>Hillman 2025</span>
+              <small>Mixed-acuity oscillometric P5/P50/P95</small>
+            </button>
+            <button class="reference-model-tab active" type="button" data-reference-model="philadelphia" aria-pressed="true">
+              <span>Zubrow 1995</span>
+              <small>Historical oscillometric chart · Default</small>
+            </button>
+          </div>
+          <label class="select-label other-reference-label">Other reference models
+            <select id="other-reference-model" aria-label="Other reference models">
+              <option value="" selected disabled>Choose van Zadelhoff, Elsayed, or Kiss</option>
               <option value="van-zadelhoff">van Zadelhoff 2023 - non-invasive first-week model</option>
               <option value="elsayed-uac">Elsayed 2024 - invasive UAC, GA 23-28 weeks, first 72 h</option>
-              <option value="hillman-weekly">Hillman 2025 - mixed-acuity oscillometric weekly P5/P50/P95</option>
               <option value="kiss-stable">Kiss 2023 - stable neonates, days 1/3/5, P10/P50/P90</option>
             </select>
           </label>
+          <input id="reference-model" name="referenceModel" type="hidden" value="philadelphia">
           <p class="field-help">Select the reference that matches the measurement method and infant. The calculator never joins datasets automatically.</p>
         </fieldset>
 

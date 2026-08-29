@@ -451,15 +451,29 @@ assert(kissReferenceValues(43, 12) === null, "Kiss upper GA guard");
 assert(referenceValues(37, 37, 4, 6, "kiss-stable").day === 5, "Explicit Kiss day-5 selection");
 
 const htmlSource = fs.readFileSync("index.html", "utf8");
-const zubrowOptionIndex = htmlSource.indexOf('<option value="philadelphia">');
+const appUiSource = fs.readFileSync("app.js", "utf8");
+const hillmanTabIndex = htmlSource.indexOf('data-reference-model="hillman-weekly"');
+const zubrowTabIndex = htmlSource.indexOf('data-reference-model="philadelphia"');
 const vanZadelhoffOptionIndex = htmlSource.indexOf('<option value="van-zadelhoff">');
 const elsayedOptionIndex = htmlSource.indexOf('<option value="elsayed-uac">');
-const hillmanOptionIndex = htmlSource.indexOf('<option value="hillman-weekly">');
 const kissOptionIndex = htmlSource.indexOf('<option value="kiss-stable">');
-assert(zubrowOptionIndex !== -1, "Zubrow selector option exists");
-assert(zubrowOptionIndex < vanZadelhoffOptionIndex && vanZadelhoffOptionIndex < elsayedOptionIndex &&
-  elsayedOptionIndex < hillmanOptionIndex && hillmanOptionIndex < kissOptionIndex,
-  "Reference selector order is Zubrow, van Zadelhoff, Elsayed, Hillman, Kiss");
+assert(hillmanTabIndex !== -1 && zubrowTabIndex !== -1, "Hillman and Zubrow primary tabs exist");
+assert(hillmanTabIndex < zubrowTabIndex, "Hillman tab is left of Zubrow tab");
+assert(htmlSource.includes('data-reference-model="philadelphia" aria-pressed="true"'),
+  "Zubrow primary tab is selected by default");
+assert(htmlSource.includes('id="reference-model" name="referenceModel" type="hidden" value="philadelphia"'),
+  "Hidden model state defaults to Zubrow");
+assert(vanZadelhoffOptionIndex !== -1 && elsayedOptionIndex !== -1 && kissOptionIndex !== -1,
+  "Other reference dropdown contains van Zadelhoff, Elsayed, and Kiss");
+assert(vanZadelhoffOptionIndex < elsayedOptionIndex && elsayedOptionIndex < kissOptionIndex,
+  "Other reference dropdown order is van Zadelhoff, Elsayed, Kiss");
+assert(!htmlSource.includes('<option value="hillman-weekly">') && !htmlSource.includes('<option value="philadelphia">'),
+  "Hillman and Zubrow are not duplicated in the dropdown");
+
+const styleSource = fs.readFileSync("styles.css", "utf8");
+assert(styleSource.includes(".reference-model-tabs { display: grid; grid-template-columns: repeat(2"),
+  "Primary reference tabs use a two-column layout");
+assert(appUiSource.includes('selectReferenceModel("philadelphia")'), "Reset restores Zubrow selection");
 
 [DAY_ONE_BP, CORRECTED_AGE_BP].forEach((table, tableIndex) => {
   table.forEach(row => {
