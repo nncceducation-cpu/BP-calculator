@@ -51,15 +51,30 @@
         <fieldset>
           <legend>Postnatal age</legend>
           <div class="input-row">
-            <label>Days of life
+            <label>Completed days
               <input id="dol" name="dol" type="number" min="0" max="154" step="1" inputmode="numeric" placeholder="e.g., 18" required>
             </label>
+            <label>Additional hours
+              <input id="postnatal-hours" name="postnatalHours" type="number" min="0" max="23" step="1" inputmode="numeric" value="0" required>
+            </label>
           </div>
+          <p class="field-help">Use completed time since birth. For example, 2 days and 6 hours means 54 hours after birth.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Reference model</legend>
+          <label class="select-label">Model
+            <select id="reference-model" name="referenceModel">
+              <option value="automatic">Automatic contemporary-first-week model</option>
+              <option value="philadelphia">Philadelphia historical chart</option>
+            </select>
+          </label>
+          <p class="field-help">Automatic uses the continuous 2023 van Zadelhoff model from 1 to 168 hours when birth GA is 24+0 to 41+6 weeks. It never silently joins a different dataset. The historical chart remains available as an explicit option.</p>
         </fieldset>
 
         <fieldset class="patient-bp-fieldset">
           <legend>Current blood pressure <span class="optional-label">Optional</span></legend>
-          <p class="field-help">Enter one or more measured values to compare them with the age-specific 5th centile.</p>
+          <p class="field-help">Enter one or more measured values to compare them with the selected reference.</p>
           <div class="input-row bp-input-row">
             <label>Systolic, mmHg
               <input id="patient-sbp" name="patientSbp" type="number" min="1" max="200" step="1" inputmode="numeric" placeholder="SBP">
@@ -74,7 +89,7 @@
         </fieldset>
 
         <p id="form-error" class="error-message" role="alert" hidden></p>
-        <button class="primary-button" type="submit">Calculate centiles</button>
+        <button class="primary-button" type="submit">Calculate reference</button>
       </form>
     </section>
 
@@ -97,9 +112,9 @@
         <div class="section-heading">
           <div>
             <p class="step-label">Step 3</p>
-            <h2>Reference blood pressure centiles</h2>
+            <h2>Reference blood pressure</h2>
           </div>
-          <span class="method-badge">5th / 50th / 95th</span>
+          <span id="reference-badge" class="method-badge">5th / 50th / 95th</span>
         </div>
 
         <div class="bp-grid">
@@ -114,7 +129,7 @@
             <dl id="dbp-values"></dl>
           </article>
           <article class="bp-card map">
-            <h3>Mean arterial</h3>
+            <h3>Mean arterial<span id="map-derived-marker" hidden>*</span></h3>
             <p class="abbreviation">MAP, mmHg</p>
             <dl id="map-values"></dl>
           </article>
@@ -126,13 +141,15 @@
               <p class="step-label">Patient comparison</p>
               <h3 id="comparison-heading">Current blood pressure versus reference range</h3>
             </div>
-            <span class="comparison-rule">Red &lt;5th · Green 5th-95th · Amber &gt;95th</span>
+            <span id="comparison-rule" class="comparison-rule">Red &lt;5th · Green 5th-95th · Amber &gt;95th</span>
           </div>
           <div id="comparison-grid" class="comparison-grid"></div>
-          <p class="comparison-caution">Green means the value lies from the 5th through the 95th centile in this reference. Amber identifies a value above the normative 95th centile and is not, by itself, a diagnosis of hypertension. A green result does not confirm adequate systemic or cerebral perfusion.</p>
+          <p id="comparison-caution" class="comparison-caution">Green means the value lies from the 5th through the 95th centile in this reference. Amber identifies a value above the normative 95th centile and is not, by itself, a diagnosis of hypertension. A green result does not confirm adequate systemic or cerebral perfusion.</p>
         </section>
 
+        <p id="model-note" class="model-note"></p>
         <p id="interpolation-note" class="fine-print"></p>
+        <p id="derived-map-note" class="fine-print" hidden>* Historical MAP values are derived as DBP + (SBP - DBP) / 3 and rounded to whole mmHg. Zubrow reported oscillometric SBP and DBP measurements.</p>
       </div>
     </section>
 
@@ -151,7 +168,8 @@
       <details>
         <summary>Evidence sources and calculator method</summary>
         <div class="details-content">
-          <p><strong>Numerical model:</strong> the calculator uses the Philadelphia Neonatal Blood Pressure Study reference values: birth gestation on days 0–1 (22–42 weeks), then corrected gestational age after day 1 (24–46 weeks). It reports 5th, 50th, and 95th centiles and linearly interpolates between whole-week rows; it never extrapolates.</p>
+          <p><strong>Automatic numerical model:</strong> from 1 to 168 completed postnatal hours, eligible infants use the van Zadelhoff et al. 2023 non-invasive quantile-regression model. The displayed 5th and 95th centiles are evaluated from the published model at normal scores -1.64485 and +1.64485. The model directly conditions on GA at birth and exact postnatal age.</p>
+          <p><strong>Historical chart option:</strong> the Philadelphia Neonatal Blood Pressure Study chart can be selected explicitly. It uses birth GA during the first 24 hours and corrected postconceptional age after 24 hours. Because these are separate regression charts, the calculator does not join them automatically to the contemporary model. Its plotted lower and upper limits are labelled as historical limits rather than true 5th and 95th centiles. Historical MAP is derived from SBP and DBP.</p>
           <p><strong>Why the values changed:</strong> the previously displayed Dionne table was developed to identify possible hypertension and emphasizes upper centiles. It is retained below as an important hypertension source but is not used as the calculator's default normative distribution. Newer large cohorts support strong gestational- and postnatal-age effects, but do not yet provide one complete, externally validated 5th/50th/95th SBP, DBP, and MAP table across the entire neonatal age range.</p>
           <ol>
             <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants. Neonatology. 2025;122:138-145.</li>
@@ -268,6 +286,8 @@
     <p><a href="privacy.html">Privacy policy</a></p>
   </footer>
   <script src="data.js"></script>
+  <script src="contemporary-data.js"></script>
+  <script src="contemporary.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

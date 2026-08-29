@@ -87,8 +87,9 @@ legend { margin-bottom: 0.65rem; font-weight: 750; }
 .patient-bp-fieldset { border-top: 1px solid var(--line); padding-top: 1.15rem; }
 .optional-label { border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.5rem; vertical-align: middle; }
 .field-help { margin: -0.3rem 0 0.75rem; color: var(--muted); font-size: 0.82rem; }
-.input-row label { display: grid; gap: 0.4rem; color: var(--muted); font-size: 0.88rem; font-weight: 650; }
-input {
+.input-row label, .select-label { display: grid; gap: 0.4rem; color: var(--muted); font-size: 0.88rem; font-weight: 650; }
+.select-label { max-width: 620px; }
+input, select {
   width: 100%;
   border: 1px solid #b9cbd7;
   border-radius: 12px;
@@ -98,7 +99,7 @@ input {
   font-size: 1.05rem;
   padding: 0.78rem 0.9rem;
 }
-input:focus { outline: 3px solid rgba(29, 111, 163, 0.18); border-color: var(--blue); }
+input:focus, select:focus { outline: 3px solid rgba(29, 111, 163, 0.18); border-color: var(--blue); }
 .primary-button {
   width: fit-content;
   border: 0;
@@ -120,6 +121,7 @@ input:focus { outline: 3px solid rgba(29, 111, 163, 0.18); border-color: var(--b
 .warning { border-left: 5px solid var(--warning-border); border-radius: 10px; background: var(--warning); padding: 1rem 1.1rem; }
 .warning.danger { border-color: var(--danger-border); background: var(--danger); }
 .method-badge { border-radius: 999px; background: #e5f4f6; color: #0a6572; font-size: 0.78rem; font-weight: 750; padding: 0.4rem 0.7rem; }
+.contemporary-badge { background: #e8f6ee; color: #17663a; }
 .bp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.2rem; }
 .bp-card { overflow: hidden; position: relative; border: 1px solid var(--line); border-radius: 18px; padding: 1.2rem; }
 .bp-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: var(--blue); }
@@ -145,6 +147,7 @@ dd { margin: 0; }
 dd strong { color: var(--navy); font-size: 1.35rem; }
 dd span { color: var(--muted); font-size: 0.72rem; }
 .fine-print { margin: 0.8rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.model-note { margin: 1rem 0 0; border-radius: 10px; background: var(--soft); color: #344d5d; font-size: 0.84rem; padding: 0.8rem 0.9rem; }
 .patient-comparison { margin-top: 1.4rem; border-top: 1px solid var(--line); padding-top: 1.3rem; }
 .comparison-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .comparison-heading h3 { color: var(--navy); font-size: 1.2rem; }

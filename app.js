@@ -10,13 +10,17 @@ function roundOne(value) {
   return Math.round(value * 10) / 10;
 }
 
-function calculateCga(gaWeeks, gaDays, dol) {
-  const totalDays = gaWeeks * 7 + gaDays + dol;
+function calculateCga(gaWeeks, gaDays, dol, postnatalHours = 0) {
+  const totalHours = (gaWeeks * 7 + gaDays + dol) * 24 + postnatalHours;
+  const totalDays = totalHours / 24;
+  const remainderHours = totalHours % (7 * 24);
   return {
+    totalHours,
     totalDays,
     weeks: Math.floor(totalDays / 7),
-    days: totalDays % 7,
-    decimalWeeks: totalDays / 7
+    days: Math.floor(remainderHours / 24),
+    hours: remainderHours % 24,
+    decimalWeeks: totalHours / (7 * 24)
   };
 }
 
@@ -44,10 +48,15 @@ function interpolateTable(table, decimalAge) {
   };
 }
 
-function referenceValues(gaDecimal, cgaDecimal, dol) {
-  const isDayOne = dol <= 1;
+function referenceValues(gaDecimal, cgaDecimal, dol, postnatalHours = 0, selectedModel = "philadelphia") {
+  const ageHours = dol * 24 + postnatalHours;
+  if (selectedModel === "automatic") {
+    return contemporaryReferenceValues(gaDecimal, ageHours);
+  }
+
+  const isDayOne = ageHours < 24;
   const values = interpolateTable(isDayOne ? DAY_ONE_BP : CORRECTED_AGE_BP, isDayOne ? gaDecimal : cgaDecimal);
-  return values ? { ...values, model: isDayOne ? "day-one" : "corrected-age" } : null;
+  return values ? { ...values, model: isDayOne ? "philadelphia-day-one" : "philadelphia-corrected-age" } : null;
 }
 
 function classifyPressure(value, fifthCentile, ninetyFifthCentile) {
@@ -62,7 +71,7 @@ function classifyHypertension(value, percentile95, percentile99) {
   return "below-95";
 }
 
-function renderPressureValues(elementId, values) {
+function renderPressureValues(elementId, values, labels = CENTILE_LABELS) {
   const list = document.querySelector(elementId);
   list.replaceChildren();
   values.forEach((value, index) => {
@@ -70,7 +79,7 @@ function renderPressureValues(elementId, values) {
     wrapper.className = `centile-row centile-${index}`;
     const term = document.createElement("dt");
     const description = document.createElement("dd");
-    term.textContent = CENTILE_LABELS[index];
+    term.textContent = labels[index];
     description.innerHTML = `<strong>${value}</strong> <span>mmHg</span>`;
     wrapper.append(term, description);
     list.append(wrapper);
@@ -90,7 +99,10 @@ function renderPatientComparison(centiles, patientValues) {
   grid.replaceChildren();
   pressures.forEach(item => {
     const status = classifyPressure(item.value, item.fifth, item.ninetyFifth);
-    const statusText = status === "low" ? "Below 5th centile" : status === "high" ? "Above 95th centile" : "Within 5th-95th centiles";
+    const historical = centiles.model.startsWith("philadelphia-");
+    const statusText = historical
+      ? status === "low" ? "Below historical lower limit" : status === "high" ? "Above historical upper limit" : "Within historical chart limits"
+      : status === "low" ? "Below 5th centile" : status === "high" ? "Above 95th centile" : "Within 5th-95th centiles";
     const card = document.createElement("article");
     card.className = `comparison-card ${status}`;
     card.innerHTML = `
@@ -99,7 +111,7 @@ function renderPatientComparison(centiles, patientValues) {
         <p class="comparison-name">${item.label} (${item.short})</p>
         <p class="comparison-value"><strong>${item.value}</strong> mmHg</p>
         <p class="comparison-status">${statusText}</p>
-        <p class="comparison-threshold">5th: ${item.fifth} · 95th: ${item.ninetyFifth} mmHg</p>
+        <p class="comparison-threshold">${historical ? "Lower" : "5th"}: ${item.fifth} · ${historical ? "Upper" : "95th"}: ${item.ninetyFifth} mmHg</p>
       </div>`;
     grid.append(card);
   });
@@ -152,6 +164,8 @@ form.addEventListener("submit", event => {
   const gaWeeks = Number(document.querySelector("#ga-weeks").value);
   const gaDays = Number(document.querySelector("#ga-days").value);
   const dol = Number(document.querySelector("#dol").value);
+  const postnatalHours = Number(document.querySelector("#postnatal-hours").value);
+  const selectedModel = document.querySelector("#reference-model").value;
   const readOptionalPressure = id => {
     const raw = document.querySelector(id).value.trim();
     return raw === "" ? null : Number(raw);
@@ -164,36 +178,68 @@ form.addEventListener("submit", event => {
 
   if (!validateInteger(gaWeeks, 22, 42)) return showError("Enter birth gestation from 22 to 42 completed weeks.");
   if (!validateInteger(gaDays, 0, 6)) return showError("Enter 0 to 6 additional gestational days.");
-  if (!validateInteger(dol, 0, 154)) return showError("Enter an integer day of life from 0 to 154.");
+  if (!validateInteger(dol, 0, 154)) return showError("Enter completed postnatal days from 0 to 154.");
+  if (!validateInteger(postnatalHours, 0, 23)) return showError("Enter 0 to 23 additional postnatal hours.");
   if (Object.values(patientValues).some(value => value !== null && (!Number.isFinite(value) || value < 1 || value > 200))) {
     return showError("Enter blood pressure values from 1 to 200 mmHg, or leave the fields blank.");
   }
 
-  const cga = calculateCga(gaWeeks, gaDays, dol);
+  const cga = calculateCga(gaWeeks, gaDays, dol, postnatalHours);
   const gaDecimal = gaWeeks + gaDays / 7;
-  document.querySelector("#cga-display").innerHTML = `<strong>${cga.weeks}</strong> weeks <strong>${cga.days}</strong> days`;
-  transitionWarning.hidden = dol >= 14;
+  document.querySelector("#cga-display").innerHTML = `<strong>${cga.weeks}</strong> weeks <strong>${cga.days}</strong> days${cga.hours ? ` <strong>${cga.hours}</strong> hours` : ""}`;
+  transitionWarning.hidden = dol * 24 + postnatalHours >= 14 * 24;
 
-  const centiles = referenceValues(gaDecimal, cga.decimalWeeks, dol);
+  const centiles = referenceValues(gaDecimal, cga.decimalWeeks, dol, postnatalHours, selectedModel);
   results.hidden = false;
 
   if (!centiles) {
     centileContent.hidden = true;
     rangeWarning.hidden = false;
-    rangeWarning.textContent = dol <= 1
-      ? `Birth gestation is outside the 22+0 to 42+0 week day-one reference. No value has been extrapolated.`
-      : `Corrected gestational age is ${cga.weeks}+${cga.days} weeks. The corrected-age reference covers 24+0 to 46+0 weeks. No value has been extrapolated.`;
+    if (selectedModel === "automatic") {
+      rangeWarning.textContent = "The contemporary model covers birth GA 24+0 to 41+6 weeks and postnatal age 1 to 168 hours. No different dataset has been joined automatically. Select the historical Philadelphia chart if you need its older extended-age reference.";
+    } else {
+      rangeWarning.textContent = dol * 24 + postnatalHours < 24
+        ? `Birth gestation is outside the 22+0 to 42+0 week Philadelphia first-24-hour reference. No value has been extrapolated.`
+        : `Corrected gestational age is ${cga.weeks}+${cga.days} weeks. The corrected-age reference covers 24+0 to 46+0 weeks. No value has been extrapolated.`;
+    }
   } else {
     centileContent.hidden = false;
     rangeWarning.hidden = true;
-    renderPressureValues("#sbp-values", centiles.sbp);
-    renderPressureValues("#dbp-values", centiles.dbp);
-    renderPressureValues("#map-values", centiles.map);
+    const historical = centiles.model.startsWith("philadelphia-");
+    const labels = historical ? ["Lower", "Midline", "Upper"] : CENTILE_LABELS;
+    renderPressureValues("#sbp-values", centiles.sbp, labels);
+    renderPressureValues("#dbp-values", centiles.dbp, labels);
+    renderPressureValues("#map-values", centiles.map, labels);
     renderPatientComparison(centiles, patientValues);
-    const ageBasis = centiles.model === "day-one" ? "birth-gestation" : "corrected-gestation";
-    document.querySelector("#interpolation-note").textContent = centiles.interpolated
-      ? `Calculated by linear interpolation between the published ${centiles.lower}- and ${centiles.upper}-week ${ageBasis} rows.`
-      : `Matches the published ${centiles.lower}-week ${ageBasis} row without interpolation.`;
+    const badge = document.querySelector("#reference-badge");
+    const modelNote = document.querySelector("#model-note");
+    const interpolationNote = document.querySelector("#interpolation-note");
+    const comparisonRule = document.querySelector("#comparison-rule");
+    const comparisonCaution = document.querySelector("#comparison-caution");
+    const derivedMapNote = document.querySelector("#derived-map-note");
+    const mapDerivedMarker = document.querySelector("#map-derived-marker");
+    if (centiles.model === "contemporary-first-week") {
+      badge.textContent = "van Zadelhoff 2023 · P5 / P50 / P95";
+      badge.classList.add("contemporary-badge");
+      modelNote.textContent = "Contemporary first-week model: 607 NICU neonates and 5,885 non-invasive measurements. Values depend on both gestational age at birth and exact postnatal age.";
+      interpolationNote.textContent = "P5 and P95 are evaluated from the published quantile-regression model at normal scores -1.64485 and +1.64485. No table interpolation is used.";
+      comparisonRule.textContent = "Red <5th · Green 5th-95th · Amber >95th";
+      comparisonCaution.textContent = "Green means the value lies from the 5th through the 95th centile in this reference. Amber identifies a value above the normative 95th centile and is not, by itself, a diagnosis of hypertension. A green result does not confirm adequate systemic or cerebral perfusion.";
+      derivedMapNote.hidden = true;
+      mapDerivedMarker.hidden = true;
+    } else {
+      badge.textContent = "Philadelphia 1995 · historical chart limits";
+      badge.classList.remove("contemporary-badge");
+      modelNote.textContent = "Historical Philadelphia chart selected by the user. Its lower and upper plotted limits are not presented as true 5th and 95th centiles.";
+      const ageBasis = centiles.model === "philadelphia-day-one" ? "birth-gestation" : "corrected-postconceptional-age";
+      interpolationNote.textContent = centiles.interpolated
+        ? `Calculated by linear interpolation between the published ${centiles.lower}- and ${centiles.upper}-week ${ageBasis} rows.`
+        : `Matches the published ${centiles.lower}-week ${ageBasis} row without interpolation.`;
+      comparisonRule.textContent = "Red <lower · Green within limits · Amber >upper";
+      comparisonCaution.textContent = "The historical lower and upper chart limits are not true 5th and 95th centiles. This comparison is descriptive only and must not be used as a treatment threshold.";
+      derivedMapNote.hidden = false;
+      mapDerivedMarker.hidden = false;
+    }
   }
 
   results.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -202,6 +248,8 @@ form.addEventListener("submit", event => {
 resetButton.addEventListener("click", () => {
   form.reset();
   document.querySelector("#ga-days").value = "0";
+  document.querySelector("#postnatal-hours").value = "0";
+  document.querySelector("#reference-model").value = "automatic";
   results.hidden = true;
   errorBox.hidden = true;
   document.querySelector("#ga-weeks").focus();

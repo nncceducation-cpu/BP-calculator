@@ -84,8 +84,10 @@ const appContext = {
   HYPERTENSION_BP
 };
 vm.createContext(appContext);
+vm.runInContext(`${fs.readFileSync("contemporary-data.js", "utf8")}\n${fs.readFileSync("contemporary.js", "utf8")}\nthis.__contemporary = { erasmusEstimateAtZ, contemporaryReferenceValues };`, appContext);
 vm.runInContext(appSource, appContext);
 const { calculateCga, interpolateTable, referenceValues, classifyPressure, classifyHypertension } = appContext.module.exports;
+const { erasmusEstimateAtZ, contemporaryReferenceValues } = appContext.__contemporary;
 
 let checks = 0;
 function assert(condition, message) {
@@ -197,6 +199,72 @@ testNormativeBoundaries(DAY_ONE_SOURCE, "Day-one");
 testNormativeBoundaries(CORRECTED_AGE_SOURCE, "Corrected-age");
 testHypertensionBoundaries(HYPERTENSION_SOURCE);
 
+// Independent fixtures read from the authors' live reference calculator.
+const ERASMUS_SOURCE_FIXTURES = [
+  {
+    input: [24, 0, 0, 1],
+    map: [15.53, 21.45, 27.44, 33.41, 39.22],
+    sbp: [28.48, 35.52, 42.68, 49.94, 57.20],
+    dbp: [5.75, 10.83, 16.07, 21.69, 27.75]
+  },
+  {
+    input: [28, 3, 2, 6],
+    map: [31.81, 37.43, 44.02, 51.02, 57.49],
+    sbp: [46.67, 52.58, 59.52, 67.07, 74.11],
+    dbp: [18.92, 25.63, 32.69, 39.57, 45.98]
+  },
+  {
+    input: [40, 0, 7, 0],
+    map: [50.81, 56.58, 62.48, 68.57, 74.81],
+    sbp: [64.60, 71.62, 78.88, 86.46, 94.20],
+    dbp: [39.03, 45.30, 51.46, 57.63, 63.98]
+  }
+];
+
+ERASMUS_SOURCE_FIXTURES.forEach(fixture => {
+  const [weeks, gaDays, postnatalDays, hours] = fixture.input;
+  const ga = weeks + gaDays / 7;
+  const postnatalAgeHours = postnatalDays * 24 + hours;
+  [-2, -1, 0, 1, 2].forEach((zScore, centileIndex) => {
+    const [map, sbp, dbp] = erasmusEstimateAtZ(ga, postnatalAgeHours, zScore);
+    [[map, fixture.map[centileIndex]], [sbp, fixture.sbp[centileIndex]], [dbp, fixture.dbp[centileIndex]]]
+      .forEach(([actual, expected]) => assert(Math.abs(actual - expected) < 0.0051,
+        `Erasmus source fixture ${fixture.input.join("/")} z=${zScore}: expected ${expected}, received ${actual}`));
+  });
+});
+
+for (let birthWeeks = 24; birthWeeks <= 41; birthWeeks += 1) {
+  for (let hour = 1; hour <= 168; hour += 6) {
+    const result = contemporaryReferenceValues(birthWeeks, hour);
+    assert(result !== null, `Contemporary range: ${birthWeeks} weeks, hour ${hour}`);
+    [result.sbp, result.dbp, result.map].forEach(values => {
+      assert(values[0] <= values[1] && values[1] <= values[2],
+        `Contemporary centile order: ${birthWeeks} weeks, hour ${hour}`);
+    });
+  }
+}
+assert(contemporaryReferenceValues(23 + 6 / 7, 24) === null, "Contemporary lower GA guard");
+assert(contemporaryReferenceValues(42, 24) === null, "Contemporary upper GA guard");
+assert(contemporaryReferenceValues(30, 0) === null, "Contemporary lower age guard");
+assert(contemporaryReferenceValues(30, 169) === null, "Contemporary upper age guard");
+
+assert(referenceValues(30, 30, 0, 1, "automatic").model === "contemporary-first-week", "Automatic contemporary selection at 1 hour");
+assert(referenceValues(30, 31, 7, 0, "automatic").model === "contemporary-first-week", "Automatic contemporary selection at 168 hours");
+assert(referenceValues(30, 31, 7, 1, "automatic") === null, "No automatic dataset join after 168 hours");
+assert(referenceValues(23, 23, 0, 12, "automatic") === null, "No automatic dataset join below 24 weeks");
+assert(referenceValues(30, 31, 7, 1, "philadelphia").model === "philadelphia-corrected-age", "Explicit historical selection after 168 hours");
+assert(referenceValues(23, 23, 0, 12, "philadelphia").model === "philadelphia-day-one", "Explicit historical selection below 24 weeks");
+
+[DAY_ONE_BP, CORRECTED_AGE_BP].forEach((table, tableIndex) => {
+  table.forEach(row => {
+    row.map.forEach((mapValue, index) => {
+      const derivedMap = row.dbp[index] + (row.sbp[index] - row.dbp[index]) / 3;
+      assert(Math.abs(mapValue - derivedMap) <= 0.34,
+        `Historical MAP derivation: table ${tableIndex}, age ${row.age}, index ${index}`);
+    });
+  });
+});
+
 // Exhaust all supported birth GA and days-of-life combinations through 22 weeks.
 for (let birthWeeks = 22; birthWeeks <= 42; birthWeeks += 1) {
   for (let birthDays = 0; birthDays <= 6; birthDays += 1) {
@@ -206,10 +274,10 @@ for (let birthWeeks = 22; birthWeeks <= 42; birthWeeks += 1) {
       assert(cga.weeks === Math.floor(totalDays / 7), `CGA weeks: ${birthWeeks}+${birthDays}, DOL ${dol}`);
       assert(cga.days === totalDays % 7, `CGA days: ${birthWeeks}+${birthDays}, DOL ${dol}`);
       const result = referenceValues(birthWeeks + birthDays / 7, totalDays / 7, dol);
-      if (dol <= 1) {
-        assert(result === null || result.model === "day-one", `Day-one model selection: DOL ${dol}`);
+      if (dol === 0) {
+        assert(result === null || result.model === "philadelphia-day-one", `First-24-hour model selection: DOL ${dol}`);
       } else {
-        assert(result === null || result.model === "corrected-age", `Corrected-age model selection: DOL ${dol}`);
+        assert(result === null || result.model === "philadelphia-corrected-age", `Corrected-age model selection: DOL ${dol}`);
       }
     }
   }
