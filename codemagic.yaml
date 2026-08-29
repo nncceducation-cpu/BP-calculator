@@ -20,8 +20,8 @@ workflows:
           npm test
           rm -rf www
           mkdir -p www
-          cp index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html www/
-          for asset in index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html; do
+          cp index.html styles.css app.js data.js additional-data.js contemporary-data.js contemporary.js privacy.html www/
+          for asset in index.html styles.css app.js data.js additional-data.js contemporary-data.js contemporary.js privacy.html; do
             test -s "www/$asset"
           done
       - name: Generate iOS project
@@ -78,8 +78,8 @@ workflows:
           npm test
           rm -rf www
           mkdir -p www
-          cp index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html www/
-          for asset in index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html; do
+          cp index.html styles.css app.js data.js additional-data.js contemporary-data.js contemporary.js privacy.html www/
+          for asset in index.html styles.css app.js data.js additional-data.js contemporary-data.js contemporary.js privacy.html; do
             test -s "www/$asset"
           done
       - name: Generate Android project

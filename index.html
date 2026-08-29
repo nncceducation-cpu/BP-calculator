@@ -16,7 +16,7 @@
     <div>
       <p class="eyebrow">Calgary Neonatal Neuro-Critical Care Program</p>
       <h1>Neonatal Blood Pressure Centile Calculator</h1>
-      <p class="subtitle">Corrected gestational age and SBP, DBP, and MAP 5th, 50th, and 95th reference centiles</p>
+      <p class="subtitle">Corrected gestational age with source-specific SBP, DBP, and MAP reference limits or centiles</p>
     </div>
   </header>
 
@@ -65,11 +65,14 @@
           <legend>Reference model</legend>
           <label class="select-label">Model
             <select id="reference-model" name="referenceModel">
-              <option value="automatic">Automatic contemporary-first-week model</option>
-              <option value="philadelphia">Philadelphia historical chart</option>
+              <option value="philadelphia">Zubrow 1995 - historical oscillometric chart (default)</option>
+              <option value="van-zadelhoff">van Zadelhoff 2023 - non-invasive first-week model</option>
+              <option value="elsayed-uac">Elsayed 2024 - invasive UAC, GA 23-28 weeks, first 72 h</option>
+              <option value="hillman-weekly">Hillman 2025 - mixed-acuity oscillometric weekly P5/P50/P95</option>
+              <option value="kiss-stable">Kiss 2023 - stable neonates, days 1/3/5, P10/P50/P90</option>
             </select>
           </label>
-          <p class="field-help">Automatic uses the continuous 2023 van Zadelhoff model from 1 to 168 hours when birth GA is 24+0 to 41+6 weeks. It never silently joins a different dataset. The historical chart remains available as an explicit option.</p>
+          <p class="field-help">Select the reference that matches the measurement method and infant. The calculator never joins datasets automatically.</p>
         </fieldset>
 
         <fieldset class="patient-bp-fieldset">
@@ -162,28 +165,34 @@
         </div>
         <div>
           <h3>Measurement method matters</h3>
-          <p>Use a correctly sized cuff on a settled infant. Oscillometric SBP can exceed intra-arterial SBP, especially at low pressures. MAP generally shows the closest agreement.</p>
+          <p>Match the selected source to the measurement method and population. Zubrow, van Zadelhoff, Hillman, and Kiss are non-invasive references. Elsayed applies only to invasive UAC measurements in stable preterm infants.</p>
         </div>
       </div>
       <details>
         <summary>Evidence sources and calculator method</summary>
         <div class="details-content">
-          <p><strong>Automatic numerical model:</strong> from 1 to 168 completed postnatal hours, eligible infants use the van Zadelhoff et al. 2023 non-invasive quantile-regression model. The displayed 5th and 95th centiles are evaluated from the published model at normal scores -1.64485 and +1.64485. The model directly conditions on GA at birth and exact postnatal age.</p>
-          <p><strong>Historical chart option:</strong> the Philadelphia Neonatal Blood Pressure Study chart can be selected explicitly. It uses birth GA during the first 24 hours and corrected postconceptional age after 24 hours. Because these are separate regression charts, the calculator does not join them automatically to the contemporary model. Its plotted lower and upper limits are labelled as historical limits rather than true 5th and 95th centiles. Historical MAP is derived from SBP and DBP.</p>
-          <p><strong>Why the values changed:</strong> the previously displayed Dionne table was developed to identify possible hypertension and emphasizes upper centiles. It is retained below as an important hypertension source but is not used as the calculator's default normative distribution. Newer large cohorts support strong gestational- and postnatal-age effects, but do not yet provide one complete, externally validated 5th/50th/95th SBP, DBP, and MAP table across the entire neonatal age range.</p>
+          <p><strong>Default Zubrow historical chart:</strong> the Philadelphia Neonatal Blood Pressure Study chart uses birth GA during the first 24 hours and corrected postconceptional age afterward. Its separate regression charts are not joined to another source. The plotted lower and upper limits are labelled as historical limits rather than true 5th and 95th centiles. Historical MAP is derived from SBP and DBP.</p>
+          <p><strong>van Zadelhoff non-invasive model:</strong> from 1 to 168 completed postnatal hours, eligible infants use the 2023 non-invasive quantile-regression model. The displayed 5th and 95th centiles are evaluated at normal scores -1.64485 and +1.64485. The model conditions on GA at birth and exact postnatal age.</p>
+          <p><strong>Elsayed invasive UAC table:</strong> this option applies only to stable infants born at 23 to 28 completed weeks with invasive UAC measurements during the first 72 hours. It uses the published day 1, day 2, or day 3 P5, P50, and P95 row for the infant's completed birth-GA week. No hourly or gestational-day interpolation is performed. The internally inconsistent P75 value reported for 24-week day-2 MAP is not used by this calculator.</p>
+          <p><strong>Hillman weekly mixed-acuity tables:</strong> this option uses the published P5, P50, and P95 cells indexed by completed birth-GA week and completed corrected-GA week. It covers birth GA 22 to 40 weeks through corrected GA 40 weeks. No interpolation is performed. The cohort includes NICU, special-care, and normal-newborn measurements, with unequal measurement frequency across gestations.</p>
+          <p><strong>Kiss stable-neonate tables:</strong> this option uses the published P10, P50, and P90 rows for grouped birth gestations on days 1, 3, and 5. It deliberately does not relabel P10/P90 as P5/P95 and does not fill days 2 or 4.</p>
+          <p><strong>Why the values changed:</strong> the previously displayed Dionne table was developed to identify possible hypertension and emphasizes upper centiles. It is retained below as a hypertension source but is not used as the calculator's default normative distribution.</p>
+          <h3>Numerical calculation sources</h3>
           <ol>
-            <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants. Neonatology. 2025;122:138-145.</li>
-            <li>Pfurtscheller K, et al. Non-invasive blood pressure monitoring immediately after birth in healthy term neonates. Pediatr Res. 2025.</li>
-            <li>Elsayed YN, Ahmed A. Normative blood pressure data in preterm infants &lt;29 weeks during the first 72 hours of life. J Perinatol. 2024;44:119-126.</li>
-            <li>Dore R, et al. Neonatal hypotension definition, treatment, and outcomes: a systematic review. Pediatr Res. 2024.</li>
-            <li>van Zadelhoff AC, et al. Age-dependent changes in arterial blood pressure in neonates during the first week of life. Br J Anaesth. 2023;130:585-594.</li>
-            <li>Kiss JK, et al. Oscillometric arterial blood pressure in haemodynamically stable neonates in the first 2 weeks of life. Pediatr Nephrol. 2023;38:3369-3378.</li>
+            <li>Zubrow AB, et al. Determinants of blood pressure in infants admitted to neonatal intensive care units: a prospective multicenter study. J Perinatol. 1995;15:470-479.</li>
+            <li>van Zadelhoff AC, et al. Age-dependent changes in arterial blood pressure in neonates during the first week of life. Br J Anaesth. 2023;130:585-594. doi:10.1016/j.bja.2023.01.024.</li>
+            <li>Elsayed Y, Ahmed F. Blood pressure normative values in preterm infants during postnatal transition. Pediatr Res. 2024;95:698-704. doi:10.1038/s41390-023-02788-8.</li>
+            <li>Hillman NH, Williams HL, Petersen RY. Oscillatory blood pressure values in newborn infants: observational data over gestational ages. Neonatology. 2025;122:138-145. doi:10.1159/000542375.</li>
+            <li>Kiss JK, Gajda A, Mari J, Nemeth J, Bereczki C. Oscillometric arterial blood pressure in haemodynamically stable neonates in the first 2 weeks of life. Pediatr Nephrol. 2023;38:3369-3378. doi:10.1007/s00467-023-05979-x.</li>
+          </ol>
+          <h3>Supporting evidence and limitations</h3>
+          <ol>
+            <li>Pfurtscheller K, et al. Newborn blood pressure dynamics during immediate postnatal transition: a retrospective analysis. Ital J Pediatr. 2025;51:149. doi:10.1186/s13052-025-02001-y.</li>
+            <li>Dore R, et al. Neonatal blood pressure by birth weight, gestational age, and postnatal age: a systematic review. Matern Health Neonatol Perinatol. 2024;10:9.</li>
             <li>Goldsmith JP, Keels EL, eds. Guidelines for Perinatal Care. 9th ed. American Academy of Pediatrics; 2022.</li>
             <li>Dionne JM. Hypertension in the neonate. Hypertension. 2021;77:10-20.</li>
             <li>Dionne JM, et al. Method of blood pressure measurement in neonates and infants. J Pediatr. 2020;221:23-31.e5.</li>
             <li>Batton B. Neonatal blood pressure and hypertension. Clin Perinatol. 2020;47:29-40.</li>
-            <li>Zubrow AB, et al. Determinants of blood pressure in infants admitted to neonatal intensive care units: a prospective multicenter study. J Perinatol. 1995;15:470-479.</li>
-            <li>Dionne JM, Abitbol CL, Flynn JT. Hypertension in infancy: diagnosis, management and outcome. Pediatr Nephrol. 2012;27:17-32.</li>
           </ol>
         </div>
       </details>
@@ -286,6 +295,7 @@
     <p><a href="privacy.html">Privacy policy</a></p>
   </footer>
   <script src="data.js"></script>
+  <script src="additional-data.js"></script>
   <script src="contemporary-data.js"></script>
   <script src="contemporary.js"></script>
   <script src="app.js"></script>

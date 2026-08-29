@@ -1,10 +1,18 @@
 const fs = require("fs");
 const vm = require("vm");
+const crypto = require("crypto");
 
 function rows(text) {
   return text.trim().split("\n").map((line) => {
     const n = line.trim().split(/\s+/).map(Number);
     return { age: n[0], sbp: n.slice(1, 4), dbp: n.slice(4, 7), map: n.slice(7, 10) };
+  });
+}
+
+function elsayedRows(text) {
+  return text.trim().split("\n").map((line) => {
+    const n = line.trim().split(/\s+/).map(Number);
+    return { ga: n[0], day: n[1], sbp: n.slice(2, 5), dbp: n.slice(5, 8), map: n.slice(8, 11) };
   });
 }
 
@@ -69,24 +77,47 @@ const HYPERTENSION_SOURCE = rows(`
 42 85 98 102 50 65 70 62 76 81
 44 88 105 110 50 68 73 63 80 85`);
 
+const ELSAYED_UAC_SOURCE = elsayedRows(`
+23 1 24 35 42 14 18 21 20 24 27
+23 2 26 37 44 19 23 25 22 25 29
+23 3 36 44 52 20 24 27 25 29 35
+24 1 25 36 42 15 18 22 22 24 27
+24 2 26 38 48 19 23 26 25 28 31
+24 3 37 46 54 21 25 29 27 31 39
+25 1 30 37 43 18 22 25 20 25 30
+25 2 33 42 52 20 24 27 25 29 32
+25 3 39 45 58 22 26 31 27 34 42
+26 1 32 38 44 19 24 27 21 26 32
+26 2 34 42 52 20 23 29 23 29 34
+26 3 40 48 60 23 27 33 25 33 43
+27 1 33 39 45 20 24 28 22 27 33
+27 2 35 44 56 22 26 30 24 30 34
+27 3 42 50 62 24 28 34 29 37 44
+28 1 34 40 48 22 26 31 24 29 35
+28 2 37 46 58 23 28 33 25 30 36
+28 3 43 54 64 25 29 36 30 39 47`);
+
 const dataContext = {};
 vm.createContext(dataContext);
-vm.runInContext(`${fs.readFileSync("data.js", "utf8")}\nthis.__tables = { DAY_ONE_BP, CORRECTED_AGE_BP, HYPERTENSION_BP };`, dataContext);
-const { DAY_ONE_BP, CORRECTED_AGE_BP, HYPERTENSION_BP } = dataContext.__tables;
+vm.runInContext(`${fs.readFileSync("data.js", "utf8")}\n${fs.readFileSync("additional-data.js", "utf8")}\nthis.__tables = { DAY_ONE_BP, CORRECTED_AGE_BP, ELSAYED_UAC_BP, HYPERTENSION_BP, HILLMAN_BP, KISS_BP };`, dataContext);
+const { DAY_ONE_BP, CORRECTED_AGE_BP, ELSAYED_UAC_BP, HYPERTENSION_BP, HILLMAN_BP, KISS_BP } = dataContext.__tables;
 
 const appSource = fs.readFileSync("app.js", "utf8")
   .replace(/const form = document[\s\S]*?function roundOne/, "function roundOne")
-  .replace(/form\.addEventListener[\s\S]*$/, "module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure, classifyHypertension };");
+  .replace(/form\.addEventListener[\s\S]*$/, "module.exports = { calculateCga, interpolateTable, elsayedReferenceValues, hillmanReferenceValues, kissReferenceValues, referenceValues, classifyPressure, classifyHypertension };");
 const appContext = {
   module: { exports: {} },
   DAY_ONE_BP,
   CORRECTED_AGE_BP,
-  HYPERTENSION_BP
+  ELSAYED_UAC_BP,
+  HYPERTENSION_BP,
+  HILLMAN_BP,
+  KISS_BP
 };
 vm.createContext(appContext);
 vm.runInContext(`${fs.readFileSync("contemporary-data.js", "utf8")}\n${fs.readFileSync("contemporary.js", "utf8")}\nthis.__contemporary = { erasmusEstimateAtZ, contemporaryReferenceValues };`, appContext);
 vm.runInContext(appSource, appContext);
-const { calculateCga, interpolateTable, referenceValues, classifyPressure, classifyHypertension } = appContext.module.exports;
+const { calculateCga, interpolateTable, elsayedReferenceValues, hillmanReferenceValues, kissReferenceValues, referenceValues, classifyPressure, classifyHypertension } = appContext.module.exports;
 const { erasmusEstimateAtZ, contemporaryReferenceValues } = appContext.__contemporary;
 
 let checks = 0;
@@ -97,6 +128,10 @@ function assert(condition, message) {
 
 function equalNumber(actual, expected, message) {
   assert(Math.abs(actual - expected) < 1e-9, `${message}: expected ${expected}, received ${actual}`);
+}
+
+function sha256(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
 function compareRows(actual, expected, label) {
@@ -182,6 +217,65 @@ function testHypertensionBoundaries(source) {
 compareRows(DAY_ONE_BP, DAY_ONE_SOURCE, "Day-one source reconciliation");
 compareRows(CORRECTED_AGE_BP, CORRECTED_AGE_SOURCE, "Corrected-age source reconciliation");
 compareRows(HYPERTENSION_BP, HYPERTENSION_SOURCE, "Hypertension source reconciliation");
+assert(ELSAYED_UAC_BP.length === ELSAYED_UAC_SOURCE.length, "Elsayed source row count");
+ELSAYED_UAC_SOURCE.forEach((row, rowIndex) => {
+  const actual = ELSAYED_UAC_BP[rowIndex];
+  assert(actual.ga === row.ga && actual.day === row.day, `Elsayed source row ${rowIndex} age/day`);
+  ["sbp", "dbp", "map"].forEach(metric => {
+    row[metric].forEach((value, centileIndex) => {
+      equalNumber(actual[metric][centileIndex], value,
+        `Elsayed source ${row.ga} weeks day ${row.day} ${metric} centile ${centileIndex}`);
+    });
+  });
+});
+
+// These digests were generated independently from the native cells in the
+// publisher-supplied Hillman PPTX and the Kiss supplementary Table 2.
+assert(HILLMAN_BP.length === 190, "Hillman source contains all 190 GA/CGA cells");
+assert(sha256(HILLMAN_BP) === "25594186ec668da6712ed1a10340663ce7d277a81c321b467649eb489d719714",
+  "Hillman source-table digest");
+assert(KISS_BP.length === 21, "Kiss source contains 7 GA groups by 3 published days");
+assert(sha256(KISS_BP) === "500590e4fd4cfb958cbc2278d76d470c877020687b0ca40c932a73cf6f16bb62",
+  "Kiss source-table digest");
+
+HILLMAN_BP.forEach((row, index) => {
+  assert(row.ga >= 22 && row.ga <= 40, `Hillman valid birth GA at row ${index}`);
+  assert(row.cga >= row.ga && row.cga <= 40, `Hillman valid corrected GA at row ${index}`);
+  assert(index === 0 || row.ga > HILLMAN_BP[index - 1].ga || row.cga === HILLMAN_BP[index - 1].cga + 1,
+    `Hillman ordered unique cell at row ${index}`);
+  ["sbp", "dbp", "map"].forEach(metric => {
+    const values = row[metric];
+    assert(values.length === 3, `Hillman ${metric} has P5/P50/P95 at ${row.ga}/${row.cga}`);
+    assert(values[0] <= values[1] && values[1] <= values[2],
+      `Hillman ordered ${metric} centiles at ${row.ga}/${row.cga}`);
+    assert(classifyPressure(values[0] - 0.1, values[0], values[2]) === "low",
+      `Hillman below P5 at ${row.ga}/${row.cga} ${metric}`);
+    assert(classifyPressure(values[0], values[0], values[2]) === "acceptable",
+      `Hillman P5 boundary at ${row.ga}/${row.cga} ${metric}`);
+    assert(classifyPressure(values[2], values[0], values[2]) === "acceptable",
+      `Hillman P95 boundary at ${row.ga}/${row.cga} ${metric}`);
+    assert(classifyPressure(values[2] + 0.1, values[0], values[2]) === "high",
+      `Hillman above P95 at ${row.ga}/${row.cga} ${metric}`);
+  });
+});
+
+KISS_BP.forEach((row, index) => {
+  assert([1, 3, 5].includes(row.day), `Kiss published day at row ${index}`);
+  assert(row.gaMin >= 25 && row.gaMax <= 42 && row.gaMin <= row.gaMax, `Kiss GA group at row ${index}`);
+  ["sbp", "dbp", "map"].forEach(metric => {
+    const values = row[metric];
+    assert(values.length === 3 && values[0] <= values[1] && values[1] <= values[2],
+      `Kiss ordered P10/P50/P90 at ${row.gaMin}-${row.gaMax} day ${row.day} ${metric}`);
+    assert(classifyPressure(values[0] - 0.1, values[0], values[2]) === "low",
+      `Kiss below P10 at ${row.gaMin}-${row.gaMax} day ${row.day} ${metric}`);
+    assert(classifyPressure(values[0], values[0], values[2]) === "acceptable",
+      `Kiss P10 boundary at ${row.gaMin}-${row.gaMax} day ${row.day} ${metric}`);
+    assert(classifyPressure(values[2], values[0], values[2]) === "acceptable",
+      `Kiss P90 boundary at ${row.gaMin}-${row.gaMax} day ${row.day} ${metric}`);
+    assert(classifyPressure(values[2] + 0.1, values[0], values[2]) === "high",
+      `Kiss above P90 at ${row.gaMin}-${row.gaMax} day ${row.day} ${metric}`);
+  });
+});
 
 [
   [DAY_ONE_BP, DAY_ONE_SOURCE, "Day-one"],
@@ -197,6 +291,7 @@ compareRows(HYPERTENSION_BP, HYPERTENSION_SOURCE, "Hypertension source reconcili
 
 testNormativeBoundaries(DAY_ONE_SOURCE, "Day-one");
 testNormativeBoundaries(CORRECTED_AGE_SOURCE, "Corrected-age");
+testNormativeBoundaries(ELSAYED_UAC_SOURCE, "Elsayed invasive UAC");
 testHypertensionBoundaries(HYPERTENSION_SOURCE);
 
 // Independent fixtures read from the authors' live reference calculator.
@@ -254,6 +349,117 @@ assert(referenceValues(30, 31, 7, 1, "automatic") === null, "No automatic datase
 assert(referenceValues(23, 23, 0, 12, "automatic") === null, "No automatic dataset join below 24 weeks");
 assert(referenceValues(30, 31, 7, 1, "philadelphia").model === "philadelphia-corrected-age", "Explicit historical selection after 168 hours");
 assert(referenceValues(23, 23, 0, 12, "philadelphia").model === "philadelphia-day-one", "Explicit historical selection below 24 weeks");
+assert(referenceValues(30, 30, 0, 1, "van-zadelhoff").model === "contemporary-first-week", "Explicit van Zadelhoff selection");
+
+ELSAYED_UAC_SOURCE.forEach(row => {
+  const representativeHour = row.day === 1 ? 12 : row.day === 2 ? 36 : 60;
+  const result = elsayedReferenceValues(row.ga + 3 / 7, representativeHour);
+  assert(result !== null, `Elsayed exact source selection ${row.ga} week day ${row.day}`);
+  ["sbp", "dbp", "map"].forEach(metric => {
+    row[metric].forEach((value, centileIndex) => {
+      equalNumber(result[metric][centileIndex], value,
+        `Elsayed lookup ${row.ga} week day ${row.day} ${metric} centile ${centileIndex}`);
+    });
+  });
+});
+
+[
+  [0, 1], [23, 1], [24, 2], [47, 2], [48, 3], [71, 3], [72, 3]
+].forEach(([hour, expectedDay]) => {
+  const result = elsayedReferenceValues(24, hour);
+  assert(result !== null && result.day === expectedDay, `Elsayed postnatal boundary hour ${hour}`);
+});
+assert(elsayedReferenceValues(22 + 6 / 7, 24) === null, "Elsayed lower GA guard");
+assert(elsayedReferenceValues(29, 24) === null, "Elsayed upper GA guard");
+assert(elsayedReferenceValues(24, -1) === null, "Elsayed lower age guard");
+assert(elsayedReferenceValues(24, 73) === null, "Elsayed upper age guard");
+assert(referenceValues(24, 24, 3, 0, "elsayed-uac").day === 3, "Elsayed selection at 72 hours");
+assert(referenceValues(24, 24, 3, 1, "elsayed-uac") === null, "No Elsayed extrapolation after 72 hours");
+
+for (let birthWeeks = 23; birthWeeks <= 28; birthWeeks += 1) {
+  for (let birthDays = 0; birthDays <= 6; birthDays += 1) {
+    for (let ageHours = 0; ageHours <= 72; ageHours += 1) {
+      const postnatalDays = Math.floor(ageHours / 24);
+      const additionalHours = ageHours % 24;
+      const gaDecimal = birthWeeks + birthDays / 7;
+      const cgaDecimal = gaDecimal + ageHours / (7 * 24);
+      const result = referenceValues(gaDecimal, cgaDecimal, postnatalDays, additionalHours, "elsayed-uac");
+      const expectedDay = ageHours < 24 ? 1 : ageHours < 48 ? 2 : 3;
+      const source = ELSAYED_UAC_SOURCE.find(row => row.ga === birthWeeks && row.day === expectedDay);
+      assert(result !== null, `Elsayed exhaustive lookup ${birthWeeks}+${birthDays}, hour ${ageHours}`);
+      assert(result.ga === birthWeeks && result.day === expectedDay,
+        `Elsayed exhaustive grouping ${birthWeeks}+${birthDays}, hour ${ageHours}`);
+      ["sbp", "dbp", "map"].forEach(metric => {
+        source[metric].forEach((value, centileIndex) => {
+          equalNumber(result[metric][centileIndex], value,
+            `Elsayed exhaustive ${birthWeeks}+${birthDays}, hour ${ageHours}, ${metric} ${centileIndex}`);
+        });
+      });
+    }
+  }
+}
+
+// Exhaust every supported completed hour for the Hillman weekly lookup.
+for (let birthWeeks = 22; birthWeeks <= 40; birthWeeks += 1) {
+  for (let birthDays = 0; birthDays <= 6; birthDays += 1) {
+    const gaDecimal = birthWeeks + birthDays / 7;
+    for (let ageHours = 0; ageHours <= 154 * 24 + 23; ageHours += 1) {
+      const cgaDecimal = gaDecimal + ageHours / (7 * 24);
+      const expectedCga = Math.floor(cgaDecimal);
+      const result = hillmanReferenceValues(gaDecimal, cgaDecimal);
+      if (expectedCga > 40) {
+        assert(result === null, `Hillman upper-age guard ${birthWeeks}+${birthDays}, hour ${ageHours}`);
+        continue;
+      }
+      assert(result !== null, `Hillman exhaustive lookup ${birthWeeks}+${birthDays}, hour ${ageHours}`);
+      assert(result.ga === birthWeeks && result.cga === expectedCga,
+        `Hillman exhaustive grouping ${birthWeeks}+${birthDays}, hour ${ageHours}`);
+      const source = HILLMAN_BP.find(row => row.ga === birthWeeks && row.cga === expectedCga);
+      ["sbp", "dbp", "map"].forEach(metric => {
+        source[metric].forEach((value, centileIndex) => equalNumber(result[metric][centileIndex], value,
+          `Hillman exhaustive value ${birthWeeks}+${birthDays}, hour ${ageHours}, ${metric} ${centileIndex}`));
+      });
+    }
+  }
+}
+assert(hillmanReferenceValues(21 + 6 / 7, 22) === null, "Hillman lower birth-GA guard");
+assert(hillmanReferenceValues(41, 41) === null, "Hillman upper birth-GA guard");
+assert(hillmanReferenceValues(30, 29.9) === null, "Hillman corrected-age-before-birth guard");
+assert(hillmanReferenceValues(30, 41) === null, "Hillman upper corrected-GA guard");
+assert(referenceValues(30, 35.9, 41, 7, "hillman-weekly").cga === 35,
+  "Explicit Hillman weekly selection");
+
+// Exhaust every published Kiss GA group, day, and within-day hour.
+KISS_BP.forEach(source => {
+  for (let ga = source.gaMin; ga <= source.gaMax; ga += 1) {
+    const startHour = source.day === 1 ? 0 : source.day === 3 ? 48 : 96;
+    for (let offset = 0; offset < 24; offset += 1) {
+      const ageHours = startHour + offset;
+      const result = kissReferenceValues(ga + 6 / 7, ageHours);
+      assert(result !== null && result.day === source.day && result.gaMin === source.gaMin && result.gaMax === source.gaMax,
+        `Kiss exhaustive grouping GA ${ga}+6, hour ${ageHours}`);
+      ["sbp", "dbp", "map"].forEach(metric => source[metric].forEach((value, centileIndex) =>
+        equalNumber(result[metric][centileIndex], value,
+          `Kiss exhaustive value GA ${ga}+6, hour ${ageHours}, ${metric} ${centileIndex}`)));
+    }
+  }
+});
+[24, 47, 72, 95, 120].forEach(hour => assert(kissReferenceValues(30, hour) === null,
+  `Kiss unsupported hour ${hour} guard`));
+assert(kissReferenceValues(24 + 6 / 7, 12) === null, "Kiss lower GA guard");
+assert(kissReferenceValues(43, 12) === null, "Kiss upper GA guard");
+assert(referenceValues(37, 37, 4, 6, "kiss-stable").day === 5, "Explicit Kiss day-5 selection");
+
+const htmlSource = fs.readFileSync("index.html", "utf8");
+const zubrowOptionIndex = htmlSource.indexOf('<option value="philadelphia">');
+const vanZadelhoffOptionIndex = htmlSource.indexOf('<option value="van-zadelhoff">');
+const elsayedOptionIndex = htmlSource.indexOf('<option value="elsayed-uac">');
+const hillmanOptionIndex = htmlSource.indexOf('<option value="hillman-weekly">');
+const kissOptionIndex = htmlSource.indexOf('<option value="kiss-stable">');
+assert(zubrowOptionIndex !== -1, "Zubrow selector option exists");
+assert(zubrowOptionIndex < vanZadelhoffOptionIndex && vanZadelhoffOptionIndex < elsayedOptionIndex &&
+  elsayedOptionIndex < hillmanOptionIndex && hillmanOptionIndex < kissOptionIndex,
+  "Reference selector order is Zubrow, van Zadelhoff, Elsayed, Hillman, Kiss");
 
 [DAY_ONE_BP, CORRECTED_AGE_BP].forEach((table, tableIndex) => {
   table.forEach(row => {

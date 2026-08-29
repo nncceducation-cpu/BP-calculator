@@ -52,6 +52,30 @@ const CORRECTED_AGE_BP = [
 
 const CENTILE_LABELS = ["5th", "50th", "95th"];
 
+// Elsayed and Ahmed 2024 invasive UAC reference values for stable infants.
+// Rows are grouped by completed gestational week at birth and postnatal day.
+// Pressure arrays are ordered: 5th, 50th, 95th.
+const ELSAYED_UAC_BP = [
+  { ga: 23, day: 1, sbp: [24,35,42], dbp: [14,18,21], map: [20,24,27] },
+  { ga: 23, day: 2, sbp: [26,37,44], dbp: [19,23,25], map: [22,25,29] },
+  { ga: 23, day: 3, sbp: [36,44,52], dbp: [20,24,27], map: [25,29,35] },
+  { ga: 24, day: 1, sbp: [25,36,42], dbp: [15,18,22], map: [22,24,27] },
+  { ga: 24, day: 2, sbp: [26,38,48], dbp: [19,23,26], map: [25,28,31] },
+  { ga: 24, day: 3, sbp: [37,46,54], dbp: [21,25,29], map: [27,31,39] },
+  { ga: 25, day: 1, sbp: [30,37,43], dbp: [18,22,25], map: [20,25,30] },
+  { ga: 25, day: 2, sbp: [33,42,52], dbp: [20,24,27], map: [25,29,32] },
+  { ga: 25, day: 3, sbp: [39,45,58], dbp: [22,26,31], map: [27,34,42] },
+  { ga: 26, day: 1, sbp: [32,38,44], dbp: [19,24,27], map: [21,26,32] },
+  { ga: 26, day: 2, sbp: [34,42,52], dbp: [20,23,29], map: [23,29,34] },
+  { ga: 26, day: 3, sbp: [40,48,60], dbp: [23,27,33], map: [25,33,43] },
+  { ga: 27, day: 1, sbp: [33,39,45], dbp: [20,24,28], map: [22,27,33] },
+  { ga: 27, day: 2, sbp: [35,44,56], dbp: [22,26,30], map: [24,30,34] },
+  { ga: 27, day: 3, sbp: [42,50,62], dbp: [24,28,34], map: [29,37,44] },
+  { ga: 28, day: 1, sbp: [34,40,48], dbp: [22,26,31], map: [24,29,35] },
+  { ga: 28, day: 2, sbp: [37,46,58], dbp: [23,28,33], map: [25,30,36] },
+  { ga: 28, day: 3, sbp: [43,54,64], dbp: [25,29,36], map: [30,39,47] }
+];
+
 // Post-transitional hypertension reference compiled by Dionne et al.
 // Pressure arrays are ordered: 50th, 95th, 99th.
 const HYPERTENSION_BP = [

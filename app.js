@@ -48,11 +48,42 @@ function interpolateTable(table, decimalAge) {
   };
 }
 
+function elsayedReferenceValues(gaDecimal, postnatalHours) {
+  if (gaDecimal < 23 || gaDecimal >= 29 || postnatalHours < 0 || postnatalHours > 72) return null;
+  const gaGroup = Math.floor(gaDecimal);
+  const day = postnatalHours < 24 ? 1 : postnatalHours < 48 ? 2 : 3;
+  const row = ELSAYED_UAC_BP.find(value => value.ga === gaGroup && value.day === day);
+  return row ? { ...row, model: "elsayed-uac", interpolated: false, ageHours: postnatalHours } : null;
+}
+
+function hillmanReferenceValues(gaDecimal, cgaDecimal) {
+  const ga = Math.floor(gaDecimal);
+  const cga = Math.floor(cgaDecimal);
+  if (ga < 22 || ga > 40 || cga < ga || cga > 40) return null;
+  const row = HILLMAN_BP.find(value => value.ga === ga && value.cga === cga);
+  return row ? { ...row, model: "hillman-weekly", interpolated: false } : null;
+}
+
+function kissReferenceValues(gaDecimal, postnatalHours) {
+  if (gaDecimal < 25 || gaDecimal >= 43 || postnatalHours < 0) return null;
+  const day = postnatalHours < 24 ? 1
+    : postnatalHours >= 48 && postnatalHours < 72 ? 3
+      : postnatalHours >= 96 && postnatalHours < 120 ? 5
+        : null;
+  if (!day) return null;
+  const ga = Math.floor(gaDecimal);
+  const row = KISS_BP.find(value => ga >= value.gaMin && ga <= value.gaMax && value.day === day);
+  return row ? { ...row, model: "kiss-stable", interpolated: false } : null;
+}
+
 function referenceValues(gaDecimal, cgaDecimal, dol, postnatalHours = 0, selectedModel = "philadelphia") {
   const ageHours = dol * 24 + postnatalHours;
-  if (selectedModel === "automatic") {
+  if (selectedModel === "van-zadelhoff" || selectedModel === "automatic") {
     return contemporaryReferenceValues(gaDecimal, ageHours);
   }
+  if (selectedModel === "elsayed-uac") return elsayedReferenceValues(gaDecimal, ageHours);
+  if (selectedModel === "hillman-weekly") return hillmanReferenceValues(gaDecimal, cgaDecimal);
+  if (selectedModel === "kiss-stable") return kissReferenceValues(gaDecimal, ageHours);
 
   const isDayOne = ageHours < 24;
   const values = interpolateTable(isDayOne ? DAY_ONE_BP : CORRECTED_AGE_BP, isDayOne ? gaDecimal : cgaDecimal);
@@ -100,9 +131,12 @@ function renderPatientComparison(centiles, patientValues) {
   pressures.forEach(item => {
     const status = classifyPressure(item.value, item.fifth, item.ninetyFifth);
     const historical = centiles.model.startsWith("philadelphia-");
+    const kiss = centiles.model === "kiss-stable";
     const statusText = historical
       ? status === "low" ? "Below historical lower limit" : status === "high" ? "Above historical upper limit" : "Within historical chart limits"
-      : status === "low" ? "Below 5th centile" : status === "high" ? "Above 95th centile" : "Within 5th-95th centiles";
+      : kiss
+        ? status === "low" ? "Below 10th centile" : status === "high" ? "Above 90th centile" : "Within 10th-90th centiles"
+        : status === "low" ? "Below 5th centile" : status === "high" ? "Above 95th centile" : "Within 5th-95th centiles";
     const card = document.createElement("article");
     card.className = `comparison-card ${status}`;
     card.innerHTML = `
@@ -111,7 +145,7 @@ function renderPatientComparison(centiles, patientValues) {
         <p class="comparison-name">${item.label} (${item.short})</p>
         <p class="comparison-value"><strong>${item.value}</strong> mmHg</p>
         <p class="comparison-status">${statusText}</p>
-        <p class="comparison-threshold">${historical ? "Lower" : "5th"}: ${item.fifth} · ${historical ? "Upper" : "95th"}: ${item.ninetyFifth} mmHg</p>
+        <p class="comparison-threshold">${historical ? "Lower" : kiss ? "10th" : "5th"}: ${item.fifth} · ${historical ? "Upper" : kiss ? "90th" : "95th"}: ${item.ninetyFifth} mmHg</p>
       </div>`;
     grid.append(card);
   });
@@ -195,8 +229,14 @@ form.addEventListener("submit", event => {
   if (!centiles) {
     centileContent.hidden = true;
     rangeWarning.hidden = false;
-    if (selectedModel === "automatic") {
+    if (selectedModel === "van-zadelhoff" || selectedModel === "automatic") {
       rangeWarning.textContent = "The contemporary model covers birth GA 24+0 to 41+6 weeks and postnatal age 1 to 168 hours. No different dataset has been joined automatically. Select the historical Philadelphia chart if you need its older extended-age reference.";
+    } else if (selectedModel === "elsayed-uac") {
+      rangeWarning.textContent = "The Elsayed invasive UAC table covers infants born at 23+0 to 28+6 weeks and postnatal age 0 to 72 hours. It applies only to invasive UAC measurements in hemodynamically stable infants. No value has been extrapolated.";
+    } else if (selectedModel === "hillman-weekly") {
+      rangeWarning.textContent = "The Hillman tables cover completed birth-GA weeks 22 to 40 and corrected gestational-age weeks from birth through 40 weeks. No value has been extrapolated or joined to another source.";
+    } else if (selectedModel === "kiss-stable") {
+      rangeWarning.textContent = "The Kiss stable-neonate tables provide P10, P50, and P90 only for postnatal days 1, 3, and 5 and birth-GA groups 25 to 42 weeks. Enter 0-23, 48-71, or 96-119 completed hours. No value has been interpolated.";
     } else {
       rangeWarning.textContent = dol * 24 + postnatalHours < 24
         ? `Birth gestation is outside the 22+0 to 42+0 week Philadelphia first-24-hour reference. No value has been extrapolated.`
@@ -206,7 +246,8 @@ form.addEventListener("submit", event => {
     centileContent.hidden = false;
     rangeWarning.hidden = true;
     const historical = centiles.model.startsWith("philadelphia-");
-    const labels = historical ? ["Lower", "Midline", "Upper"] : CENTILE_LABELS;
+    const labels = historical ? ["Lower", "Midline", "Upper"]
+      : centiles.model === "kiss-stable" ? ["10th", "50th", "90th"] : CENTILE_LABELS;
     renderPressureValues("#sbp-values", centiles.sbp, labels);
     renderPressureValues("#dbp-values", centiles.dbp, labels);
     renderPressureValues("#map-values", centiles.map, labels);
@@ -225,6 +266,33 @@ form.addEventListener("submit", event => {
       interpolationNote.textContent = "P5 and P95 are evaluated from the published quantile-regression model at normal scores -1.64485 and +1.64485. No table interpolation is used.";
       comparisonRule.textContent = "Red <5th · Green 5th-95th · Amber >95th";
       comparisonCaution.textContent = "Green means the value lies from the 5th through the 95th centile in this reference. Amber identifies a value above the normative 95th centile and is not, by itself, a diagnosis of hypertension. A green result does not confirm adequate systemic or cerebral perfusion.";
+      derivedMapNote.hidden = true;
+      mapDerivedMarker.hidden = true;
+    } else if (centiles.model === "elsayed-uac") {
+      badge.textContent = "Elsayed 2024 · invasive UAC P5 / P50 / P95";
+      badge.classList.add("contemporary-badge");
+      modelNote.textContent = "Invasive UAC reference from 206 hemodynamically stable infants born before 29 weeks. Select this model only for an invasive arterial measurement.";
+      interpolationNote.textContent = `Published day ${centiles.day} row for infants born at ${centiles.ga} completed weeks. No hourly or gestational-day interpolation is used.`;
+      comparisonRule.textContent = "Red <5th · Green 5th-95th · Amber >95th";
+      comparisonCaution.textContent = "This comparison applies to the selected invasive UAC reference population. A centile is not a treatment threshold and does not establish adequate systemic or cerebral perfusion.";
+      derivedMapNote.hidden = true;
+      mapDerivedMarker.hidden = true;
+    } else if (centiles.model === "hillman-weekly") {
+      badge.textContent = "Hillman 2025 · weekly P5 / P50 / P95";
+      badge.classList.add("contemporary-badge");
+      modelNote.textContent = "Large mixed-acuity oscillometric cohort: 29,323 infants and approximately 1.4 million measurements. Values depend on completed gestational week at birth and completed corrected gestational week.";
+      interpolationNote.textContent = `Published birth-GA ${centiles.ga}-week row and corrected-GA ${centiles.cga}-week column. No interpolation is used.`;
+      comparisonRule.textContent = "Red <5th · Green 5th-95th · Amber >95th";
+      comparisonCaution.textContent = "These are mixed-acuity observational percentiles. Measurement frequency varied by gestation and clinical status. A centile is not a treatment threshold and does not establish adequate systemic or cerebral perfusion.";
+      derivedMapNote.hidden = true;
+      mapDerivedMarker.hidden = true;
+    } else if (centiles.model === "kiss-stable") {
+      badge.textContent = "Kiss 2023 · stable neonates P10 / P50 / P90";
+      badge.classList.add("contemporary-badge");
+      modelNote.textContent = "Oscillometric reference from 629 haemodynamically stable neonates and 134,938 measurements. Values are reported in grouped birth gestations.";
+      interpolationNote.textContent = `Published day ${centiles.day} row for birth GA ${centiles.gaMin}-${centiles.gaMax} weeks. No age or gestational interpolation is used.`;
+      comparisonRule.textContent = "Red <10th · Green 10th-90th · Amber >90th";
+      comparisonCaution.textContent = "This source reports P10 and P90, not P5 and P95. The comparison applies only to the published stable-neonate group and day. It is not a treatment threshold.";
       derivedMapNote.hidden = true;
       mapDerivedMarker.hidden = true;
     } else {
@@ -249,7 +317,7 @@ resetButton.addEventListener("click", () => {
   form.reset();
   document.querySelector("#ga-days").value = "0";
   document.querySelector("#postnatal-hours").value = "0";
-  document.querySelector("#reference-model").value = "automatic";
+  document.querySelector("#reference-model").value = "philadelphia";
   results.hidden = true;
   errorBox.hidden = true;
   document.querySelector("#ga-weeks").focus();
@@ -313,4 +381,4 @@ document.querySelector("#htn-reset-button").addEventListener("click", () => {
   document.querySelector("#htn-ga-weeks").focus();
 });
 
-if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, referenceValues, classifyPressure, classifyHypertension };
+if (typeof module !== "undefined") module.exports = { calculateCga, interpolateTable, elsayedReferenceValues, referenceValues, classifyPressure, classifyHypertension };
