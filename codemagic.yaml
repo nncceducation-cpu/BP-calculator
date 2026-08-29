@@ -20,7 +20,10 @@ workflows:
           npm test
           rm -rf www
           mkdir -p www
-          cp index.html styles.css app.js data.js privacy.html www/
+          cp index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html www/
+          for asset in index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html; do
+            test -s "www/$asset"
+          done
       - name: Generate iOS project
         script: |
           npx cap add ios
@@ -32,7 +35,7 @@ workflows:
       - name: Set version and build number
         script: |
           cd ios/App
-          agvtool new-marketing-version 1.0
+          agvtool new-marketing-version 1.1
           agvtool new-version -all "$BUILD_NUMBER"
       - name: Set up code signing
         script: |
@@ -75,7 +78,10 @@ workflows:
           npm test
           rm -rf www
           mkdir -p www
-          cp index.html styles.css app.js data.js privacy.html www/
+          cp index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html www/
+          for asset in index.html styles.css app.js data.js contemporary-data.js contemporary.js privacy.html; do
+            test -s "www/$asset"
+          done
       - name: Generate Android project
         script: |
           npx cap add android
@@ -86,7 +92,7 @@ workflows:
         script: |
           cd android
           sed -i.bak "s/versionCode [0-9]*/versionCode $BUILD_NUMBER/" app/build.gradle
-          sed -i.bak 's/versionName "[^"]*"/versionName "1.0"/' app/build.gradle
+          sed -i.bak 's/versionName "[^"]*"/versionName "1.1"/' app/build.gradle
       - name: Build signed release bundle
         script: |
           cd android

@@ -4,6 +4,8 @@ A dependency-free static web calculator for corrected gestational age and neonat
 
 The repository also contains Capacitor and Codemagic configuration for signed iOS and Android store builds. The mobile package identifier is `ca.nncceducation.neonatalbp`.
 
+Mobile release 1.1 packages the contemporary model and coefficient files with the offline calculator. Both platform workflows verify that every required web asset is present before generating the native project.
+
 ## What it calculates
 
 - Corrected gestational age from gestational age at birth plus completed postnatal days and hours
